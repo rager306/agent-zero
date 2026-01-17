@@ -50,3 +50,7 @@ instruments/**
 # for browser-use
 agent_history.gif
 
+
+# Coverage reports
+.coverage
+htmlcov/
