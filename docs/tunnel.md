@@ -28,6 +28,18 @@ When sharing your Agent Zero instance via a tunnel:
 - Consider setting up authentication if you're sharing sensitive information
 - The tunnel exposes your local Agent Zero instance, not your entire system
 
+## Disabling Tunnel API
+
+If you have direct access to your Agent Zero instance (via public IP, VPN like WireGuard, or local network), you can disable the Tunnel API to save approximately 1GB of RAM.
+
+Add to your `.env` file:
+
+```
+TUNNEL_API_ENABLED=false
+```
+
+After changing this setting, restart your Agent Zero container for the changes to take effect.
+
 ## Troubleshooting
 
 If you encounter issues with the tunnel feature:

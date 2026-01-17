@@ -2,7 +2,45 @@ services:
   agent-zero:
     container_name: agent-zero
     image: agent0ai/agent-zero:latest
+
+    # Resource limits for better stability
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+
+    # Performance environment variables
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1    # Skip .pyc files, reduces I/O
+      - PYTHONUNBUFFERED=1            # Unbuffered output for logging
+      - MALLOC_ARENA_MAX=2            # Limit glibc memory arenas
+
+    # Volume mounts
     volumes:
-      - ./agent-zero:/a0
+      - ./agent-zero:/a0:Z
+
+    # tmpfs for temporary files (memory-backed, faster)
+    tmpfs:
+      - /tmp:size=256m
+
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+    # Port mapping
     ports:
       - "50080:80"
+      - "50022:22"
+
+    # Process limits
+    pids_limit: 500
+
+    # Restart policy
+    restart: unless-stopped

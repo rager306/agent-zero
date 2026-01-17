@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if tunnel API is disabled via environment variable
+if [ "${TUNNEL_API_ENABLED:-true}" = "false" ]; then
+    echo "Tunnel API disabled (TUNNEL_API_ENABLED=false)"
+    # Sleep forever to keep supervisor happy (prevents restart loops)
+    exec sleep infinity
+fi
+
 # Wait until run_tunnel.py exists
 echo "Starting tunnel API..."
 

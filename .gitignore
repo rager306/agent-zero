@@ -54,3 +54,4 @@ agent_history.gif
 # Coverage reports
 .coverage
 htmlcov/
+docker/run/agent-zero/

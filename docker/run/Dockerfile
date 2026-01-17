@@ -7,6 +7,11 @@ ARG BRANCH
 RUN if [ -z "$BRANCH" ]; then echo "ERROR: BRANCH is not set!" >&2; exit 1; fi
 ENV BRANCH=$BRANCH
 
+# Python performance optimizations
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV MALLOC_ARENA_MAX=2
+
 # Copy filesystem files to root
 COPY ./fs/ /
 

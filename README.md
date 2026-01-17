@@ -162,6 +162,8 @@ docker run -p 50001:80 agent0ai/agent-zero
 | [Architecture](./docs/architecture.md) | System design and components |
 | [Contributing](./docs/contribution.md) | How to contribute |
 | [Troubleshooting](./docs/troubleshooting.md) | Common issues and their solutions |
+| [Container Optimization](./docs/container-optimization.md) | Performance tuning for Docker/Podman |
+| [Tunnel](./docs/tunnel.md) | Public URL tunneling (Serveo, Cloudflare) |
 
 
 ## 🎯 Changelog
