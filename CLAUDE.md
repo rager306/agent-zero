@@ -121,6 +121,17 @@ Projects provide isolated workspaces in `/a0/usr/projects/{name}/.a0proj/`:
 - `memory/` - isolated memory storage
 - `secrets.env` / `variables.env` - project-scoped configuration
 
+## Versioning
+
+**Base version: `0.9.7` (fixed, does not change)**
+
+This fork uses extended versioning format: `0.9.7-XXX.YYY`
+- `0.9.7` - base version from upstream Agent Zero (frozen)
+- `XXX` - major fork iteration (increments for significant changes)
+- `YYY` - minor fork iteration (increments for patches/fixes)
+
+Example: `0.9.7-001.001` = base 0.9.7, first major iteration, first patch
+
 ---
 
 ## REMINDER: UV Package Manager
