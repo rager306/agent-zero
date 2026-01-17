@@ -34,7 +34,20 @@ playwright install chromium
 
 ### Testing
 ```bash
-python -m pytest tests/
+uv run pytest tests/
+```
+
+### Code Quality Checks
+```bash
+# Linting (ruff)
+uv run ruff check .          # Check for issues
+uv run ruff check . --fix    # Auto-fix issues
+
+# Type checking (pyrefly - Meta's type checker)
+uv run pyrefly check .
+
+# Type checking (ty - alternative)
+uv run ty check .
 ```
 
 ## Architecture
