@@ -102,7 +102,7 @@ def print_troubleshooting():
     print()
 
     print("3. FastA2A not available:")
-    print("   - Install FastA2A: pip install fasta2a")
+    print("   - Install FastA2A: uv pip install fasta2a")
     print("   - Check server logs for FastA2A configuration errors")
     print()
 
@@ -170,7 +170,7 @@ async def test_server_connectivity():
 
     except ImportError:
         print("ℹ️  httpx not available, skipping connectivity test")
-        print("   Install with: pip install httpx")
+        print("   Install with: uv pip install httpx")
         return None
 
 

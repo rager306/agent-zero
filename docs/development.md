@@ -66,7 +66,11 @@ Now when you select one of the python files in the project, you should see prope
 
 3. Install dependencies. Run these two commands in the terminal:
 ```bash
+# Using UV (recommended):
+uv sync
+# Or using pip:
 pip install -r requirements.txt
+
 playwright install chromium
 ``` 
 These will install all the python packages and browser binaries for playwright (browser agent).

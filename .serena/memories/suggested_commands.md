@@ -19,11 +19,15 @@ docker build -f DockerfileLocal -t agent-zero-local --build-arg CACHE_DATE=$(dat
 ## Development Setup
 
 ```bash
-# Install dependencies
+# Install dependencies using UV (recommended)
+uv sync
+
+# Or install dependencies using pip
 pip install -r requirements.txt
 
 # Install dev dependencies
-pip install -r requirements.dev.txt
+uv sync --group dev
+# or: pip install -r requirements.dev.txt
 
 # Install browser for Playwright
 playwright install chromium

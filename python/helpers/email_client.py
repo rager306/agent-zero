@@ -122,7 +122,7 @@ class EmailClient:
             PrintStyle.standard(f"Connected to Exchange server: {self.server}")
         except ImportError as e:
             raise RepairableException(
-                "exchangelib not installed. Install with: pip install exchangelib>=5.4.3"
+                "exchangelib not installed. Install with: uv pip install exchangelib>=5.4.3"
             ) from e
 
     async def disconnect(self) -> None:

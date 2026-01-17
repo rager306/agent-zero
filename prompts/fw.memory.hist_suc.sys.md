@@ -13,7 +13,7 @@
 [
   {
     "problem": "Task is to download a video from YouTube. A video URL is specified by the user.",
-    "solution": "1. Install yt-dlp library using 'pip install yt-dlp'\n2. Download the video using yt-dlp command: 'yt-dlp YT_URL', replace YT_URL with your video URL."
+    "solution": "1. Install yt-dlp library using 'uv pip install yt-dlp'\n2. Download the video using yt-dlp command: 'yt-dlp YT_URL', replace YT_URL with your video URL."
   }
 ]
 ```

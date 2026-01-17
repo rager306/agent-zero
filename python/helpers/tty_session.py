@@ -6,7 +6,7 @@ import errno
 
 _IS_WIN = platform.system() == "Windows"
 if _IS_WIN:
-    import winpty  # pip install pywinpty # type: ignore
+    import winpty  # uv pip install pywinpty # type: ignore
 
 
 #  Make stdin / stdout tolerant to broken UTF-8 so input() never aborts
