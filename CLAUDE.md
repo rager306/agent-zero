@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+> **IMPORTANT: This project uses UV package manager, NOT pip!**
+> - Install packages: `uv pip install <package>`
+> - Sync dependencies: `uv sync`
+> - Add to pyproject.toml, not requirements.txt
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -22,7 +27,8 @@ docker build -f DockerfileLocal -t agent-zero-local --build-arg CACHE_DATE=$(dat
 
 ### Development Setup
 ```bash
-pip install -r requirements.txt
+# Use UV package manager (NOT pip!)
+uv sync
 playwright install chromium
 ```
 
@@ -101,3 +107,26 @@ Projects provide isolated workspaces in `/a0/usr/projects/{name}/.a0proj/`:
 - `instructions/` - project-specific prompts
 - `memory/` - isolated memory storage
 - `secrets.env` / `variables.env` - project-scoped configuration
+
+---
+
+## REMINDER: UV Package Manager
+
+**Always use UV for Python package management in this project:**
+
+```bash
+# Install a package
+uv pip install <package>
+
+# Sync all dependencies from pyproject.toml
+uv sync
+
+# Add new dependency - edit pyproject.toml, then:
+uv sync
+
+# Inside Docker container
+uv pip install <package>
+uv sync --no-dev --active
+```
+
+**Never use `pip install` directly!**

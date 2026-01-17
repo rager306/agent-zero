@@ -116,7 +116,7 @@ python-version = "3.13"
 
 [tool.ty.rules]
 # Disable warnings that are mostly false positives from third-party libs
-unused-ignore-comment = false  # Already cleaned up manually
+unused-ignore-comment = "ignore"  # Already cleaned up manually
 
 # =============================================================================
 # Pyrefly (Meta) Type Checker Configuration  

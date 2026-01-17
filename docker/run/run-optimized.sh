@@ -48,7 +48,7 @@ podman run -d \
     -e TUNNEL_API_ENABLED="${TUNNEL_API_ENABLED:-true}" \
     \
     -v "${A0_DATA}:/a0:Z" \
-    -v "${ENV_FILE}:/git/agent-zero/.env:Z" \
+    -v "${ENV_FILE}:/a0/.env:Z" \
     --tmpfs /tmp:size=256m \
     \
     --log-driver=json-file \
