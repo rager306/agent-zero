@@ -9,6 +9,10 @@
 .cursor/
 .windsurf/
 
+# Ignore CLAUDE.md in subdirectories, keep only root
+**/CLAUDE.md
+!/CLAUDE.md
+
 # ignore test files in root dir
 /*.test.py
 
