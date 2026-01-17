@@ -34,13 +34,19 @@ fi
 # # Install some packages in specific variants
 # pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining A0 python packages
-uv pip install -r /git/agent-zero/requirements.txt
-# override for packages that have unnecessarily strict dependencies
-uv pip install -r /git/agent-zero/requirements2.txt
+# Install Python development headers for compiling native extensions
+apt-get update && apt-get install -y python3-dev python3.13-dev
+
+# Install remaining A0 python packages from pyproject.toml into active venv (/opt/venv-a0)
+cd /git/agent-zero
+uv sync --no-dev --active
+
+# Install pip into the active venv for compatibility with Agent Zero's code execution
+# (must be after uv sync to avoid being removed)
+uv pip install pip
 
 # install playwright
 bash /ins/install_playwright.sh "$@"
 
-# Preload A0
-python /git/agent-zero/preload.py --dockerized=true
+# Preload A0 (venv is active from setup_venv.sh)
+python preload.py --dockerized=true

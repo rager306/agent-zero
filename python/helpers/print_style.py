@@ -20,7 +20,12 @@ class PrintStyle:
         self.log_only = log_only
 
         if PrintStyle.log_file_path is None:
-            logs_dir = files.get_abs_path("logs")
+            # Use LOG_PATH from environment or default to "logs" directory
+            log_path = os.environ.get("LOG_PATH", "").strip()
+            if log_path:
+                logs_dir = log_path if os.path.isabs(log_path) else files.get_abs_path(log_path)
+            else:
+                logs_dir = files.get_abs_path("logs")
             os.makedirs(logs_dir, exist_ok=True)
             log_filename = datetime.now().strftime("log_%Y%m%d_%H%M%S.html")
             PrintStyle.log_file_path = os.path.join(logs_dir, log_filename)
