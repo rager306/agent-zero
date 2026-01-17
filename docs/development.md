@@ -16,7 +16,7 @@ This guide will show you how to setup a local development environment for Agent 
 
 ## To follow this guide you will need:
 1. VS Code compatible IDE (VS Code, Cursor, Windsurf...)
-2. Python environment (Conda, venv, uv...)
+2. Python 3.13+ with UV package manager
 3. Docker (Docker Desktop, docker-ce...)
 4. (optional) Git/GitHub
 
@@ -26,8 +26,8 @@ This guide will show you how to setup a local development environment for Agent 
 
 ## Step 0: Install required software
 - See the list above and install the software required if you don't already have it.
-- You can choose your own variants, but Python, Docker and a VS Code compatible IDE are required.
-- For Python you can choose your environment manager - base Python venv, Conda, uv...
+- You can choose your own variants, but Python 3.13+, UV, Docker and a VS Code compatible IDE are required.
+- Install UV: `curl -LsSf https://astral.sh/uv/install.sh | sh` (Linux/macOS) or `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"` (Windows)
 
 ## Step 1: Clone or download the repository
 - Agent Zero is available on GitHub [github.com/agent0ai/agent-zero](https://github.com/agent0ai/agent-zero).
@@ -64,16 +64,20 @@ Now when you select one of the python files in the project, you should see prope
 
 ![VS Code env terminal](res/dev/devinst-5.png)
 
-3. Install dependencies. Run these two commands in the terminal:
+3. Install dependencies. Run these commands in the terminal:
 ```bash
-# Using UV (recommended):
+# Install dependencies with UV (required)
 uv sync
-# Or using pip:
-pip install -r requirements.txt
 
+# Install browser binaries for playwright (browser agent)
 playwright install chromium
-``` 
+```
 These will install all the python packages and browser binaries for playwright (browser agent).
+
+> [!IMPORTANT]
+> This project uses **UV package manager exclusively**. Do not use pip.
+> - To add packages: `uv pip install <package>` and add to `pyproject.toml`
+> - To sync dependencies: `uv sync`
 Errors in the code editor caused by missing packages should now be gone. If not, try reloading the window.
 
 

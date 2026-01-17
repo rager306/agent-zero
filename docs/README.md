@@ -10,6 +10,8 @@ To begin with Agent Zero, follow the links below for detailed guides on various 
 - **[Architecture Overview](architecture.md):** Understand the internal workings of the framework.
 - **[Contributing](contribution.md):** Learn how to contribute to the Agent Zero project.
 - **[Troubleshooting and FAQ](troubleshooting.md):** Find answers to common issues and questions.
+- **[Container Optimization](container-optimization.md):** Performance tuning for Docker/Podman deployments.
+- **[Tunnel](tunnel.md):** Public URL tunneling with Serveo or Cloudflare (and how to disable it).
 
 ### Your experience with Agent Zero starts now!
 
