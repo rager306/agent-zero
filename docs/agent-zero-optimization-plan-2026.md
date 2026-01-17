@@ -13,7 +13,8 @@
 4. [Bun вместо NodeJS](#3-bun-вместо-nodejs)
 5. [SearXNG Оптимизация](#4-searxng-оптимизация)
 6. [Контейнер Оптимизация](#5-контейнер-оптимизация)
-7. [Чек-лист для внедрения](#чек-лист-для-внедрения)
+7. [Архитектура и Async/Await](#6-архитектура-и-asyncawait)
+8. [Чек-лист для внедрения](#чек-лист-для-внедрения)
 
 ---
 
@@ -23,9 +24,11 @@
 |-------------|-----------|-----------|------------------|
 | **LLM Кэширование** | 🔴 Высокий | Низкая | Снижение затрат 50-90% |
 | **UV Package Manager** | 🔴 Высокий | Низкая | Ускорение установки 10-100x |
+| **httpx + Connection Pooling** | 🔴 Высокий | Низкая | Снижение latency, HTTP/2 |
 | **Python 3.13 + JIT** | 🟡 Средний | Средняя | Ускорение 5-30% |
 | **SearXNG оптимизация** | 🟡 Средний | Низкая | Ускорение поиска 2-3x |
 | **Bun вместо NodeJS** | 🟡 Средний | Средняя | Ускорение холодного старта 5-8x |
+| **FastAPI миграция** | 🟡 Средний | Средняя | 3-4x throughput, нативный async |
 | **Контейнер оптимизация** | 🟢 Низкий | Высокая | Уменьшение образа 50% |
 | **Python 3.13 Free-Threading** | 🟢 Низкий | Высокая | Параллельность 2-4x (эксперим.) |
 
@@ -1419,6 +1422,270 @@ volumes:
 
 ---
 
+## 6. Архитектура и Async/Await
+
+### 6.1 Текущее состояние архитектуры
+
+Agent Zero использует **гибридную async архитектуру**:
+
+| Компонент | Текущая реализация | Проблемы |
+|-----------|-------------------|----------|
+| **Web Server** | Flask WSGI (Werkzeug) | Синхронный, не production-ready |
+| **Async Handlers** | DeferredTask pattern | Workaround для async в sync контексте |
+| **HTTP Client** | requests library | Блокирующий I/O |
+| **MCP Server** | ASGIMiddleware wrapper | Async через a2wsgi adapter |
+| **Multiprocessing** | Отсутствует | Нет параллельной обработки |
+
+### 6.2 Выявленные блокирующие операции
+
+#### Критические блокировки
+
+```python
+# python/helpers/defer.py - asyncio.run() в __init__
+class DeferredTask:
+    def __init__(self, ...):
+        # Проблема: блокирует event loop при вызове sync
+        self.result = asyncio.run(self._execute())
+
+# python/helpers/*.py - синхронные HTTP вызовы
+response = requests.post(url, json=data)  # Блокирует весь поток
+
+# Различные файлы - time.sleep() вместо asyncio.sleep()
+time.sleep(1)  # Блокирует event loop
+```
+
+#### Синхронный File I/O
+
+```python
+# python/helpers/files.py
+def read_file(path):
+    with open(path, 'r') as f:
+        return f.read()  # Блокирующий I/O
+```
+
+### 6.3 Анализ Web Server (Flask WSGI)
+
+#### Текущая реализация (run_ui.py)
+
+```python
+# Werkzeug development server - НЕ для production
+server = make_server(
+    host=host,
+    port=port,
+    app=app,
+    threaded=True,  # Многопоточность, но всё ещё WSGI
+)
+```
+
+#### Проблемы
+
+1. **Werkzeug dev server** — не рассчитан на production нагрузки
+2. **WSGI ограничения** — одно соединение = один поток
+3. **Нет connection pooling** — каждый запрос создаёт новое соединение
+4. **Нет HTTP/2 поддержки** — увеличенная latency
+
+### 6.4 Рекомендации по миграции
+
+#### Tier 1: Немедленные улучшения (низкий риск)
+
+##### Замена requests на httpx
+
+```python
+# До (блокирующий)
+import requests
+response = requests.post(url, json=data)
+
+# После (async-compatible)
+import httpx
+
+# Async версия
+async with httpx.AsyncClient() as client:
+    response = await client.post(url, json=data)
+
+# Sync fallback (с connection pooling)
+with httpx.Client() as client:
+    response = client.post(url, json=data)
+```
+
+**Преимущества httpx:**
+- HTTP/2 поддержка
+- Connection pooling из коробки
+- Drop-in замена requests API
+- Async и sync режимы
+
+##### Замена time.sleep на asyncio.sleep
+
+```python
+# До
+import time
+time.sleep(1)
+
+# После
+import asyncio
+await asyncio.sleep(1)
+```
+
+#### Tier 2: Среднесрочная оптимизация
+
+##### Миграция на FastAPI + Uvicorn
+
+```python
+# run_ui.py - новая версия
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.post("/api/chat")
+async def chat_handler(request: ChatRequest):
+    # Нативный async handler
+    result = await agent.process(request)
+    return result
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "run_ui:app",
+        host="0.0.0.0",
+        port=5000,
+        workers=4,  # Multiprocessing
+        limit_concurrency=1000,
+        http="h2",  # HTTP/2
+    )
+```
+
+**Преимущества FastAPI:**
+- Нативный ASGI (async)
+- Автоматическая OpenAPI документация
+- Pydantic валидация
+- До 3-4x быстрее Flask
+
+##### Структурированный Concurrency (Python 3.11+)
+
+```python
+# Использование asyncio.TaskGroup для параллельных операций
+async def process_multiple_agents(tasks: list):
+    async with asyncio.TaskGroup() as tg:
+        results = [
+            tg.create_task(agent.execute(task))
+            for task in tasks
+        ]
+    return [r.result() for r in results]
+```
+
+#### Tier 3: Продвинутая оптимизация
+
+##### ProcessPoolExecutor для CPU-bound задач
+
+```python
+from concurrent.futures import ProcessPoolExecutor
+import asyncio
+
+# Для embedding calculations, heavy text processing
+async def compute_embeddings(texts: list[str]):
+    loop = asyncio.get_event_loop()
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        embeddings = await loop.run_in_executor(
+            executor,
+            _compute_embeddings_sync,
+            texts
+        )
+    return embeddings
+```
+
+##### Connection Pooling Configuration
+
+```python
+import httpx
+
+# Глобальный HTTP client с connection pooling
+limits = httpx.Limits(
+    max_keepalive_connections=20,
+    max_connections=100,
+    keepalive_expiry=30.0
+)
+client = httpx.AsyncClient(
+    limits=limits,
+    http2=True,
+    timeout=30.0
+)
+```
+
+### 6.5 Python 3.13 Async улучшения
+
+#### Новые возможности для Agent Zero
+
+| Feature | Описание | Применение |
+|---------|----------|------------|
+| **Улучшенный TaskGroup** | Лучшая обработка исключений | Параллельные агенты |
+| **asyncio.Runner** | Переиспользуемый event loop | DeferredTask pattern |
+| **asyncio.eager_task_factory** | Немедленный старт coroutines | Снижение latency |
+| **Улучшенный GC** | Меньше пауз в async коде | Стабильность |
+
+#### Пример использования asyncio.Runner
+
+```python
+# Вместо asyncio.run() в цикле
+runner = asyncio.Runner()
+
+class DeferredTask:
+    _runner = asyncio.Runner()
+
+    def result_sync(self):
+        # Переиспользует runner, не создаёт новый event loop
+        return self._runner.run(self._async_execute())
+```
+
+### 6.6 Приоритетная матрица реализации
+
+| Изменение | Приоритет | Сложность | ROI |
+|-----------|-----------|-----------|-----|
+| httpx вместо requests | 🔴 Высокий | Низкая | Очень высокий |
+| asyncio.sleep вместо time.sleep | 🔴 Высокий | Низкая | Высокий |
+| Connection pooling | 🔴 Высокий | Низкая | Высокий |
+| FastAPI миграция | 🟡 Средний | Средняя | Очень высокий |
+| ProcessPoolExecutor | 🟡 Средний | Средняя | Средний |
+| Python 3.13 async features | 🟢 Низкий | Низкая | Средний |
+
+### 6.7 Архитектурная диаграмма (целевое состояние)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FastAPI + Uvicorn                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │  Worker 1   │  │  Worker 2   │  │  Worker N   │         │
+│  │ (async loop)│  │ (async loop)│  │ (async loop)│         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   httpx AsyncClient                          │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              Connection Pool (100 max)               │   │
+│  │    HTTP/2 multiplexing, keep-alive, retry logic      │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+   ┌─────────┐       ┌─────────┐        ┌─────────┐
+   │ LLM API │       │   MCP   │        │ Search  │
+   │(OpenAI) │       │ Servers │        │(SearXNG)│
+   └─────────┘       └─────────┘        └─────────┘
+```
+
+### 6.8 Источники по async архитектуре
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Uvicorn ASGI Server](https://www.uvicorn.org/)
+- [httpx Documentation](https://www.python-httpx.org/)
+- [Python asyncio TaskGroup](https://docs.python.org/3/library/asyncio-task.html#task-groups)
+- [Python 3.13 asyncio improvements](https://docs.python.org/3/whatsnew/3.13.html)
+- [ASGI vs WSGI Performance](https://www.techempower.com/benchmarks/)
+- [Starlette Performance](https://www.starlette.io/)
+
+---
+
 ## Чек-лист для внедрения
 
 ### Этап 1: Немедленно (1-2 дня)
@@ -1427,6 +1694,7 @@ volumes:
 - [ ] Добавить `cache_control` для MiniMax/OpenRouter вызовов
 - [ ] Установить UV и мигрировать requirements
 - [ ] Переключить a0-launcher на `bun install`
+- [ ] Заменить `time.sleep()` на `asyncio.sleep()` где применимо
 
 ### Этап 2: На этой неделе
 
@@ -1434,6 +1702,8 @@ volumes:
 - [ ] Оптимизировать SearXNG движки и настройки
 - [ ] Настроить uWSGI workers и threads
 - [ ] Добавить resource limits в docker-compose
+- [ ] Заменить `requests` на `httpx` с connection pooling
+- [ ] Добавить глобальный httpx.AsyncClient с limits
 
 ### Этап 3: В течение месяца
 
@@ -1441,6 +1711,8 @@ volumes:
 - [ ] Тестировать Bun runtime для a0-launcher
 - [ ] Оптимизировать Dockerfile с multi-stage builds
 - [ ] Внедрить Redis semantic caching
+- [ ] Прототип FastAPI + Uvicorn для run_ui.py
+- [ ] Рефакторинг DeferredTask с asyncio.Runner
 
 ### Этап 4: Q2 2026
 
@@ -1448,6 +1720,8 @@ volumes:
 - [ ] Внедрить семантическое кэширование (GPTCache)
 - [ ] Полная миграция на Bun
 - [ ] Оптимизировать образ с DockerSlim
+- [ ] Полная миграция на FastAPI/ASGI
+- [ ] ProcessPoolExecutor для CPU-bound операций
 
 ---
 
