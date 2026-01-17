@@ -84,6 +84,11 @@ chat:
   xai:
     name: xAI
     litellm_provider: xai
+  minimax:
+    name: MiniMax
+    litellm_provider: openai
+    kwargs:
+      api_base: https://api.minimax.io/v1
   other:
     name: Other OpenAI compatible
     litellm_provider: openai
