@@ -17,7 +17,8 @@ class SchedulerTaskCreate(ApiHandler):
         printer = PrintStyle(italic=True, font_color="blue", padding=False)
 
         # Get timezone from input (do not set if not provided, we then rely on poll() to set it)
-        if timezone := input.get("timezone", None):
+        timezone = input.get("timezone", None)
+        if timezone:
             Localization.get().set_timezone(timezone)
 
         scheduler = TaskScheduler.get()

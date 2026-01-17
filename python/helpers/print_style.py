@@ -1,4 +1,6 @@
-import os, webcolors, html
+import os
+import webcolors
+import html
 import sys
 from datetime import datetime
 from . import files

@@ -14,7 +14,7 @@ class Message(ApiHandler):
         return await self.respond(task, context)
 
     async def respond(self, task: DeferredTask, context: AgentContext):
-        result = await task.result()  # type: ignore
+        result = await task.result()
         return {
             "message": result,
             "context": context.id,
@@ -74,7 +74,7 @@ class Message(ApiHandler):
         # Print to console and log
         PrintStyle(
             background_color="#6C3483", font_color="white", bold=True, padding=True
-        ).print(f"User message:")
+        ).print("User message:")
         PrintStyle(font_color="white", padding=False).print(f"> {message}")
         if attachment_filenames:
             PrintStyle(font_color="white", padding=False).print("Attachments:")

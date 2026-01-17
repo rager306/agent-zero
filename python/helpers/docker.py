@@ -1,8 +1,6 @@
 import time
 import docker
-import atexit
 from typing import Optional
-from python.helpers.files import get_abs_path
 from python.helpers.errors import format_error
 from python.helpers.print_style import PrintStyle
 from python.helpers.log import Log
@@ -89,9 +87,9 @@ class DockerContainerManager:
             self.container = self.client.containers.run(
                 self.image,
                 detach=True,
-                ports=self.ports, # type: ignore
+                ports=self.ports,
                 name=self.name,
-                volumes=self.volumes, # type: ignore
+                volumes=self.volumes,
             ) 
             # atexit.register(self.cleanup_container)
             PrintStyle.standard(f"Started container with ID: {self.container.id}")

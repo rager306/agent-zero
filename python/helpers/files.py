@@ -1,18 +1,13 @@
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 import json
-from ntpath import isabs
 import os
-import sys
 import re
 import base64
 import shutil
 import tempfile
 from typing import Any
 import zipfile
-import importlib
-import importlib.util
-import inspect
 import glob
 import mimetypes
 
@@ -347,7 +342,7 @@ def delete_dir(relative_path: str):
 
                 # try again after changing permissions
                 shutil.rmtree(abs_path, ignore_errors=True)
-            except:
+            except Exception:
                 # suppress all errors - we're ensuring no errors propagate
                 pass
 

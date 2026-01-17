@@ -32,7 +32,7 @@ class ImportKnowledge(ApiHandler):
 
         for file in file_list:
             if file and file.filename:
-                filename = secure_filename(file.filename)  # type: ignore
+                filename = secure_filename(file.filename)
                 file.save(os.path.join(KNOWLEDGE_FOLDER, filename))
                 saved_filenames.append(filename)
 

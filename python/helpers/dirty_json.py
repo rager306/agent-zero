@@ -120,7 +120,7 @@ class DirtyJson:
         elif self.current_char == "[":
             return self._parse_array()
         elif self.current_char in ['"', "'", "`"]:
-            if self._peek(2) == self.current_char * 2:  # type: ignore
+            if self._peek(2) == self.current_char * 2:
                 return self._parse_multiline_string()
             return self._parse_string()
         elif self.current_char and (

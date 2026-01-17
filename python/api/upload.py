@@ -13,7 +13,7 @@ class UploadFile(ApiHandler):
 
         for file in file_list:
             if file and self.allowed_file(file.filename):  # Check file type
-                filename = secure_filename(file.filename) # type: ignore
+                filename = secure_filename(file.filename)
                 file.save(files.get_abs_path("tmp/upload", filename))
                 saved_filenames.append(filename)
 

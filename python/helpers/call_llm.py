@@ -32,7 +32,7 @@ async def call_llm(
 
     few_shot_prompt = FewShotChatMessagePromptTemplate(
         example_prompt=example_prompt,
-        examples=examples,  # type: ignore
+        examples=examples,
         input_variables=[],
     )
 

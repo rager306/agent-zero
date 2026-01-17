@@ -1,6 +1,5 @@
 from git import Repo
 from datetime import datetime
-import os
 from python.helpers import files
 
 def get_git_info():
@@ -32,7 +31,7 @@ def get_git_info():
             short_tag = "-".join(tag_split[:-1])
         else:
             short_tag = tag
-    except:
+    except Exception:
         tag = ""
 
     version = branch[0].upper() + " " + ( short_tag or commit_hash[:7] )

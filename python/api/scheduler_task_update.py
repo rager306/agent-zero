@@ -12,7 +12,8 @@ class SchedulerTaskUpdate(ApiHandler):
         Update an existing task in the scheduler
         """
         # Get timezone from input (do not set if not provided, we then rely on poll() to set it)
-        if timezone := input.get("timezone", None):
+        timezone = input.get("timezone", None)
+        if timezone:
             Localization.get().set_timezone(timezone)
 
         scheduler = TaskScheduler.get()

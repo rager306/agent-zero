@@ -1,8 +1,6 @@
-import asyncio
 from datetime import timedelta
 import os
 import secrets
-import hashlib
 import time
 import socket
 import struct

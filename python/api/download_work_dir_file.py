@@ -91,7 +91,7 @@ class DownloadFile(ApiHandler):
             file_info.get_file_info, file_path
         )
 
-        if not file["exists"]:
+        if not file or not file["exists"]:
             raise Exception(f"File {file_path} not found")
 
         if file["is_dir"]:
