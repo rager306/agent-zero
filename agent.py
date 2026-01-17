@@ -132,7 +132,7 @@ class AgentContext:
     @classmethod
     def get_notification_manager(cls):
         if cls._notification_manager is None:
-            from python.helpers.notification import NotificationManager  # type: ignore
+            from python.helpers.notification import NotificationManager
             cls._notification_manager = NotificationManager()
         return cls._notification_manager
 
@@ -261,10 +261,10 @@ class AgentContext:
                     tool_name="call_subordinate", tool_result=msg  # type: ignore
                 )
             )
-            response = await agent.monologue()  # type: ignore
+            response = await agent.monologue()
             superior = agent.data.get(Agent.DATA_NAME_SUPERIOR, None)
             if superior:
-                response = await self._process_chain(superior, response, False)  # type: ignore
+                response = await self._process_chain(superior, response, False)
             return response
         except Exception as e:
             agent.handle_critical_exception(e)
@@ -347,7 +347,7 @@ class Agent:
         self.number = number
         self.agent_name = f"A{self.number}"
 
-        self.history = history.History(self)  # type: ignore[abstract]
+        self.history = history.History(self)
         self.last_user_message: history.Message | None = None
         self.intervention: UserMessage | None = None
         self.data: dict[str, Any] = {}  # free data object all the tools can use
@@ -480,7 +480,7 @@ class Agent:
             finally:
                 self.context.streaming_agent = None  # unset current streamer
                 # call monologue_end extensions
-                await self.call_extensions("monologue_end", loop_data=self.loop_data)  # type: ignore
+                await self.call_extensions("monologue_end", loop_data=self.loop_data)
 
     async def prepare_prompt(self, loop_data: LoopData) -> list[BaseMessage]:
         self.context.log.set_progress("Building prompt")
@@ -499,7 +499,7 @@ class Agent:
         system_text = "\n\n".join(loop_data.system)
 
         # join extras
-        extras = history.Message(  # type: ignore[abstract]
+        extras = history.Message(
             False,
             content=self.read_prompt(
                 "agent.context.extras.md",
@@ -634,7 +634,7 @@ class Agent:
             content = {k: v for k, v in content.items() if v}
 
         # add to history
-        msg = self.hist_add_message(False, content=content)  # type: ignore
+        msg = self.hist_add_message(False, content=content)
         self.last_user_message = msg
         return msg
 
@@ -822,7 +822,7 @@ class Agent:
                 )
 
             if tool:
-                self.loop_data.current_tool = tool # type: ignore
+                self.loop_data.current_tool = tool
                 try:
                     await self.handle_intervention()
 
@@ -901,7 +901,7 @@ class Agent:
         if self.config.profile:
             try:
                 classes = extract_tools.load_classes_from_file(
-                    "agents/" + self.config.profile + "/tools/" + name + ".py", Tool  # type: ignore[arg-type]
+                    "agents/" + self.config.profile + "/tools/" + name + ".py", Tool
                 )
             except Exception:
                 pass
@@ -910,7 +910,7 @@ class Agent:
         if not classes:
             try:
                 classes = extract_tools.load_classes_from_file(
-                    "python/tools/" + name + ".py", Tool  # type: ignore[arg-type]
+                    "python/tools/" + name + ".py", Tool
                 )
             except Exception:
                 pass
