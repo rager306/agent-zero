@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "generated": "2026-01-17",
+    "project": "agent-zero",
+    "source_version": "langchain 0.3.x",
+    "target_version": "langchain 1.x",
+    "documentation_source": "docs.langchain.com (Ref MCP)"
+  },
+  "required_packages": [
+    "langchain>=1.0.0",
+    "langchain-core>=0.3.0",
+    "langchain-community>=0.4.0",
+    "langchain-classic>=0.1.0",
+    "langchain-text-splitters>=0.3.0"
+  ],
+  "files_to_modify": [
+    {
+      "file": "python/helpers/call_llm.py",
+      "priority": "high",
+      "changes": [
+        {
+          "line": 2,
+          "old": "from langchain.prompts import (",
+          "new": "from langchain_core.prompts import (",
+          "reason": "langchain.prompts moved to langchain_core.prompts"
+        },
+        {
+          "line": 7,
+          "old": "from langchain.schema import AIMessage",
+          "new": "from langchain_core.messages import AIMessage",
+          "reason": "langchain.schema moved to langchain_core.messages"
+        }
+      ]
+    },
+    {
+      "file": "python/helpers/memory.py",
+      "priority": "high",
+      "changes": [
+        {
+          "line": 3,
+          "old": "from langchain.storage import InMemoryByteStore, LocalFileStore",
+          "new": "from langchain_classic.storage import InMemoryByteStore, LocalFileStore",
+          "reason": "langchain.storage moved to langchain_classic.storage (official docs)"
+        },
+        {
+          "line": 4,
+          "old": "from langchain.embeddings import CacheBackedEmbeddings",
+          "new": "from langchain_classic.embeddings import CacheBackedEmbeddings",
+          "reason": "CacheBackedEmbeddings moved to langchain_classic (official docs)"
+        }
+      ]
+    },
+    {
+      "file": "python/helpers/vector_db.py",
+      "priority": "high",
+      "changes": [
+        {
+          "line": 10,
+          "old": "from langchain.storage import InMemoryByteStore",
+          "new": "from langchain_classic.storage import InMemoryByteStore",
+          "reason": "langchain.storage moved to langchain_classic.storage"
+        },
+        {
+          "line": 14,
+          "old": "from langchain.embeddings import CacheBackedEmbeddings",
+          "new": "from langchain_classic.embeddings import CacheBackedEmbeddings",
+          "reason": "CacheBackedEmbeddings moved to langchain_classic"
+        }
+      ]
+    },
+    {
+      "file": "python/helpers/document_query.py",
+      "priority": "medium",
+      "changes": [
+        {
+          "line": 22,
+          "old": "from langchain.schema import SystemMessage, HumanMessage",
+          "new": "from langchain_core.messages import SystemMessage, HumanMessage",
+          "reason": "langchain.schema moved to langchain_core.messages"
+        },
+        {
+          "line": 28,
+          "old": "from langchain.text_splitter import RecursiveCharacterTextSplitter",
+          "new": "from langchain_text_splitters import RecursiveCharacterTextSplitter",
+          "reason": "text_splitter moved to separate package langchain_text_splitters"
+        }
+      ]
+    },
+    {
+      "file": "models.py",
+      "priority": "medium",
+      "changes": [
+        {
+          "line": 41,
+          "old": "from langchain.embeddings.base import Embeddings",
+          "new": "from langchain_core.embeddings import Embeddings",
+          "reason": "embeddings.base moved to langchain_core.embeddings"
+        }
+      ]
+    }
+  ],
+  "files_ok": [
+    "agent.py",
+    "python/helpers/history.py",
+    "python/helpers/memory_consolidation.py",
+    "python/api/memory_dashboard.py",
+    "python/helpers/knowledge_import.py"
+  ],
+  "import_mapping": {
+    "langchain.prompts": "langchain_core.prompts",
+    "langchain.schema": "langchain_core.messages",
+    "langchain.schema.Document": "langchain_core.documents.Document",
+    "langchain.storage": "langchain_classic.storage",
+    "langchain.embeddings.CacheBackedEmbeddings": "langchain_classic.embeddings.CacheBackedEmbeddings",
+    "langchain.embeddings.base": "langchain_core.embeddings",
+    "langchain.text_splitter": "langchain_text_splitters",
+    "langchain.chat_models": "langchain_community.chat_models"
+  }
+}
