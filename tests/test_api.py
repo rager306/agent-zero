@@ -31,6 +31,7 @@ import threading
 # Test Fixtures and Setup
 # =============================================================================
 
+
 @pytest.fixture
 def mock_git_info():
     """Mock git info response for health check."""
@@ -40,7 +41,7 @@ def mock_git_info():
         "commit_time": "24-01-15 12:00",
         "tag": "v1.0.0",
         "short_tag": "v1.0.0",
-        "version": "M v1.0.0"
+        "version": "M v1.0.0",
     }
 
 
@@ -172,6 +173,7 @@ def lock():
 # Health Check API Tests
 # =============================================================================
 
+
 class TestHealthCheckAPI:
     """Tests for the /health endpoint."""
 
@@ -179,21 +181,25 @@ class TestHealthCheckAPI:
     def health_handler(self, app, lock):
         """Create a HealthCheck handler instance."""
         from python.api.health import HealthCheck
+
         return HealthCheck(app, lock)
 
     def test_health_check_requires_no_auth(self):
         """Health check endpoint should not require authentication."""
         from python.api.health import HealthCheck
+
         assert HealthCheck.requires_auth() is False
 
     def test_health_check_requires_no_csrf(self):
         """Health check endpoint should not require CSRF token."""
         from python.api.health import HealthCheck
+
         assert HealthCheck.requires_csrf() is False
 
     def test_health_check_supports_get_and_post(self):
         """Health check endpoint should support GET and POST methods."""
         from python.api.health import HealthCheck
+
         methods = HealthCheck.get_methods()
         assert "GET" in methods
         assert "POST" in methods
@@ -214,10 +220,7 @@ class TestHealthCheckAPI:
     @pytest.mark.asyncio
     async def test_health_check_handles_git_error(self, health_handler):
         """Health check should handle git errors gracefully."""
-        with patch(
-            "python.api.health.git.get_git_info",
-            side_effect=Exception("Git repository not found")
-        ):
+        with patch("python.api.health.git.get_git_info", side_effect=Exception("Git repository not found")):
             mock_request = MagicMock()
             result = await health_handler.process({}, mock_request)
 
@@ -231,6 +234,7 @@ class TestHealthCheckAPI:
 # Settings GET API Tests
 # =============================================================================
 
+
 class TestGetSettingsAPI:
     """Tests for the /settings_get endpoint."""
 
@@ -238,32 +242,30 @@ class TestGetSettingsAPI:
     def settings_get_handler(self, app, lock):
         """Create a GetSettings handler instance."""
         from python.api.settings_get import GetSettings
+
         return GetSettings(app, lock)
 
     def test_get_settings_requires_auth_by_default(self):
         """Settings GET endpoint should require authentication by default."""
         from python.api.settings_get import GetSettings
+
         # Default requires_auth is True (inherited from ApiHandler)
         assert GetSettings.requires_auth() is True
 
     def test_get_settings_supports_get_and_post(self):
         """Settings GET endpoint should support GET and POST methods."""
         from python.api.settings_get import GetSettings
+
         methods = GetSettings.get_methods()
         assert "GET" in methods
         assert "POST" in methods
 
     @pytest.mark.asyncio
-    async def test_get_settings_returns_settings(
-        self, settings_get_handler, mock_settings, mock_settings_output
-    ):
+    async def test_get_settings_returns_settings(self, settings_get_handler, mock_settings, mock_settings_output):
         """Settings GET should return settings object."""
-        with patch(
-            "python.api.settings_get.settings.get_settings",
-            return_value=mock_settings
-        ), patch(
-            "python.api.settings_get.settings.convert_out",
-            return_value=mock_settings_output
+        with (
+            patch("python.api.settings_get.settings.get_settings", return_value=mock_settings),
+            patch("python.api.settings_get.settings.convert_out", return_value=mock_settings_output),
         ):
             mock_request = MagicMock()
             result = await settings_get_handler.process({}, mock_request)
@@ -276,6 +278,7 @@ class TestGetSettingsAPI:
 # Settings SET API Tests
 # =============================================================================
 
+
 class TestSetSettingsAPI:
     """Tests for the /settings_set endpoint."""
 
@@ -283,24 +286,21 @@ class TestSetSettingsAPI:
     def settings_set_handler(self, app, lock):
         """Create a SetSettings handler instance."""
         from python.api.settings_set import SetSettings
+
         return SetSettings(app, lock)
 
     def test_set_settings_requires_auth(self):
         """Settings SET endpoint should require authentication."""
         from python.api.settings_set import SetSettings
+
         assert SetSettings.requires_auth() is True
 
     @pytest.mark.asyncio
-    async def test_set_settings_updates_settings(
-        self, settings_set_handler, mock_settings
-    ):
+    async def test_set_settings_updates_settings(self, settings_set_handler, mock_settings):
         """Settings SET should update and return settings."""
-        with patch(
-            "python.api.settings_set.settings.convert_in",
-            return_value=mock_settings
-        ), patch(
-            "python.api.settings_set.settings.set_settings",
-            return_value=mock_settings
+        with (
+            patch("python.api.settings_set.settings.convert_in", return_value=mock_settings),
+            patch("python.api.settings_set.settings.set_settings", return_value=mock_settings),
         ):
             mock_request = MagicMock()
             input_data = {"chat_model_name": "gpt-4-turbo"}
@@ -316,6 +316,7 @@ class TestSetSettingsAPI:
 # the module's class method behaviors without instantiating the handler.
 # =============================================================================
 
+
 class TestCSRFTokenAPIClassMethods:
     """Tests for the /csrf_token endpoint class methods.
 
@@ -327,15 +328,17 @@ class TestCSRFTokenAPIClassMethods:
         """CSRF token module should define GetCsrfToken class."""
         # Import the module parts we can access without session dependency
         from python.helpers.api import ApiHandler
+
         # Verify ApiHandler base has expected methods
-        assert hasattr(ApiHandler, 'requires_csrf')
-        assert hasattr(ApiHandler, 'requires_auth')
-        assert hasattr(ApiHandler, 'get_methods')
+        assert hasattr(ApiHandler, "requires_csrf")
+        assert hasattr(ApiHandler, "requires_auth")
+        assert hasattr(ApiHandler, "get_methods")
 
 
 # =============================================================================
 # Projects API Tests
 # =============================================================================
+
 
 class TestProjectsAPI:
     """Tests for the /projects endpoint."""
@@ -344,11 +347,13 @@ class TestProjectsAPI:
     def projects_handler(self, app, lock):
         """Create a Projects handler instance."""
         from python.api.projects import Projects
+
         return Projects(app, lock)
 
     def test_projects_requires_auth(self):
         """Projects endpoint should require authentication."""
         from python.api.projects import Projects
+
         assert Projects.requires_auth() is True
 
     @pytest.mark.asyncio
@@ -359,11 +364,7 @@ class TestProjectsAPI:
             {"name": "project2", "path": "/path/to/project2"},
         ]
 
-        with patch.object(
-            projects_handler,
-            "get_active_projects_list",
-            return_value=mock_projects
-        ):
+        with patch.object(projects_handler, "get_active_projects_list", return_value=mock_projects):
             mock_request = MagicMock()
             result = await projects_handler.process({"action": "list"}, mock_request)
 
@@ -384,10 +385,7 @@ class TestProjectsAPI:
     async def test_projects_create_requires_data(self, projects_handler):
         """Projects create action should require project data."""
         mock_request = MagicMock()
-        result = await projects_handler.process(
-            {"action": "create", "project": None},
-            mock_request
-        )
+        result = await projects_handler.process({"action": "create", "project": None}, mock_request)
 
         assert result["ok"] is False
         assert "error" in result
@@ -397,10 +395,7 @@ class TestProjectsAPI:
     async def test_projects_load_requires_name(self, projects_handler):
         """Projects load action should require project name."""
         mock_request = MagicMock()
-        result = await projects_handler.process(
-            {"action": "load", "name": None},
-            mock_request
-        )
+        result = await projects_handler.process({"action": "load", "name": None}, mock_request)
 
         assert result["ok"] is False
         assert "error" in result
@@ -411,38 +406,45 @@ class TestProjectsAPI:
 # API Handler Base Class Tests
 # =============================================================================
 
+
 class TestApiHandlerBase:
     """Tests for the ApiHandler base class."""
 
     def test_default_requires_loopback_false(self):
         """Default requires_loopback should be False."""
         from python.helpers.api import ApiHandler
+
         assert ApiHandler.requires_loopback() is False
 
     def test_default_requires_api_key_false(self):
         """Default requires_api_key should be False."""
         from python.helpers.api import ApiHandler
+
         assert ApiHandler.requires_api_key() is False
 
     def test_default_requires_auth_true(self):
         """Default requires_auth should be True."""
         from python.helpers.api import ApiHandler
+
         assert ApiHandler.requires_auth() is True
 
     def test_default_methods_post_only(self):
         """Default methods should be POST only."""
         from python.helpers.api import ApiHandler
+
         assert ApiHandler.get_methods() == ["POST"]
 
     def test_default_requires_csrf_follows_auth(self):
         """Default requires_csrf should follow requires_auth."""
         from python.helpers.api import ApiHandler
+
         assert ApiHandler.requires_csrf() is True
 
 
 # =============================================================================
 # Integration Tests with Flask Test Client
 # =============================================================================
+
 
 class TestAPIIntegration:
     """Integration tests using Flask test client."""
@@ -458,6 +460,7 @@ class TestAPIIntegration:
 
         async def health_route():
             from flask import request
+
             return await health_instance.handle_request(request)
 
         app.add_url_rule("/health", "health", health_route, methods=["GET", "POST"])
@@ -479,11 +482,7 @@ class TestAPIIntegration:
     def test_health_endpoint_post_request(self, test_client, mock_git_info):
         """Test health endpoint via POST request."""
         with patch("python.api.health.git.get_git_info", return_value=mock_git_info):
-            response = test_client.post(
-                "/health",
-                content_type="application/json",
-                data=json.dumps({})
-            )
+            response = test_client.post("/health", content_type="application/json", data=json.dumps({}))
 
             assert response.status_code == 200
             data = json.loads(response.data)
@@ -494,6 +493,7 @@ class TestAPIIntegration:
 # MCP Servers Status API Tests
 # =============================================================================
 
+
 class TestMCPServersStatusAPI:
     """Tests for the /mcp_servers_status endpoint."""
 
@@ -501,20 +501,15 @@ class TestMCPServersStatusAPI:
     def mcp_status_handler(self, app, lock):
         """Create a McpServersStatuss handler instance."""
         from python.api.mcp_servers_status import McpServersStatuss
+
         return McpServersStatuss(app, lock)
 
     @pytest.mark.asyncio
     async def test_mcp_servers_status_returns_status(self, mcp_status_handler):
         """MCP servers status should return server status info."""
-        mock_status = {
-            "servers": [],
-            "connected": 0,
-            "total": 0
-        }
+        mock_status = {"servers": [], "connected": 0, "total": 0}
 
-        with patch(
-            "python.api.mcp_servers_status.MCPConfig.get_instance"
-        ) as mock_mcp_config:
+        with patch("python.api.mcp_servers_status.MCPConfig.get_instance") as mock_mcp_config:
             mock_instance = MagicMock()
             mock_instance.get_servers_status.return_value = mock_status
             mock_mcp_config.return_value = mock_instance
@@ -530,6 +525,7 @@ class TestMCPServersStatusAPI:
 # Notifications History API Tests
 # =============================================================================
 
+
 class TestNotificationsHistoryAPI:
     """Tests for the /notifications_history endpoint."""
 
@@ -537,11 +533,13 @@ class TestNotificationsHistoryAPI:
     def notifications_handler(self, app, lock):
         """Create a NotificationsHistory handler instance."""
         from python.api.notifications_history import NotificationsHistory
+
         return NotificationsHistory(app, lock)
 
     def test_notifications_requires_auth(self):
         """Notifications history endpoint should require authentication."""
         from python.api.notifications_history import NotificationsHistory
+
         assert NotificationsHistory.requires_auth() is True
 
     @pytest.mark.asyncio
@@ -552,17 +550,14 @@ class TestNotificationsHistoryAPI:
             "id": "1",
             "message": "Test notification",
             "type": "info",
-            "read": False
+            "read": False,
         }
 
         mock_manager = MagicMock()
         mock_manager.notifications = [mock_notification]
         mock_manager.guid = "test-guid"
 
-        with patch(
-            "python.api.notifications_history.AgentContext.get_notification_manager",
-            return_value=mock_manager
-        ):
+        with patch("python.api.notifications_history.AgentContext.get_notification_manager", return_value=mock_manager):
             mock_request = MagicMock()
             result = await notifications_handler.process({}, mock_request)
 
@@ -576,6 +571,7 @@ class TestNotificationsHistoryAPI:
 # History GET API Tests
 # =============================================================================
 
+
 class TestHistoryGetAPI:
     """Tests for the /history_get endpoint."""
 
@@ -583,6 +579,7 @@ class TestHistoryGetAPI:
     def history_handler(self, app, lock):
         """Create a GetHistory handler instance."""
         from python.api.history_get import GetHistory
+
         return GetHistory(app, lock)
 
     @pytest.mark.asyncio

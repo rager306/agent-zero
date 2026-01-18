@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/dirty_json.py
+# hypothesis_version: 6.150.2
+
+['\x08', '"', "'", '*', '+', ',', '-', '.', '/', ':', 'E', '[', '\\', '\\u', ']', '`', 'b', 'e', 'f', 'false', 'n', 'null', 'r', 't', 'true', 'u', 'undefined', '{', '}']

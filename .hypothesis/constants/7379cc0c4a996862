@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/defer.py
+# hypothesis_version: 6.150.2
+
+['Background', 'DeferredTask', 'T', 'loop', 'thread']

@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/git.py
+# hypothesis_version: 6.150.2
+
+['%y-%m-%d %H:%M', '-', 'branch', 'commit_hash', 'commit_time', 'short_tag', 'tag', 'unknown', 'version']

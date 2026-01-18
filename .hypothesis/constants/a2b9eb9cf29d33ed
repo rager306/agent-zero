@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/errors.py
+# hypothesis_version: 6.150.2
+
+['File ', '[\\w\\.]+Error:\\s*']

@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/runtime.py
+# hypothesis_version: 6.150.2
+
+[5000, 55520, '-', '--cloudflare_tunnel', '--development', '--host', '--port', '.', '/', '/bin/bash', '/rfc', '127.0.0.1', ':', '://', '=', 'Development mode', 'R', 'T', 'TUNNEL_API_PORT', 'WEB_UI_PORT', 'Web UI host', 'Web UI port', 'dockerized', 'host.docker.internal', 'http://', 'port', 'powershell.exe', 'rfc_port_http', 'rfc_url', 'tunnel_api_port', 'win32']

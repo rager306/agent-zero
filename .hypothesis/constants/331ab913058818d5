@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/files.py
+# hypothesis_version: 6.150.2
+
+[511, 1024, '*', '../../', '.md', '.py', '.zip', '/a0/', '[^a-zA-Z0-9-._]', '_', 'r', 'rb', 'text', 'utf-8', 'w', 'wb', '{name}_{number}', '{{', '{{(\\w+)}}', '}}']

@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/strings.py
+# hypothesis_version: 6.150.2
+
+[0.0, 0.01, 0.5, 1.0, '-', '...', 'i', 'j', 'replace', 'utf-8', '§§include\\(([^)]+)\\)']

@@ -22,10 +22,18 @@ from python.helpers import files
 from python.helpers import strings
 from python.helpers import tokens
 
+# Import strategies for reuse in parameterized tests
+from tests.strategies import (
+    valid_paths,
+    valid_urls,
+    ssh_ports_strategy,
+)
+
 
 # =============================================================================
 # dirty_json.py tests
 # =============================================================================
+
 
 class TestDirtyJsonParse:
     """Tests for dirty_json parsing functions."""
@@ -37,7 +45,7 @@ class TestDirtyJsonParse:
 
     def test_parse_valid_json_array(self):
         """Parse standard valid JSON array."""
-        result = dirty_json.parse('[1, 2, 3]')
+        result = dirty_json.parse("[1, 2, 3]")
         assert result == [1, 2, 3]
 
     def test_parse_nested_object(self):
@@ -62,17 +70,17 @@ class TestDirtyJsonParse:
 
     def test_parse_trailing_comma_array(self):
         """Parse array with trailing comma."""
-        result = dirty_json.parse('[1, 2, 3,]')
+        result = dirty_json.parse("[1, 2, 3,]")
         assert result == [1, 2, 3]
 
     def test_parse_empty_string(self):
         """Parse empty string returns None."""
-        result = dirty_json.parse('')
+        result = dirty_json.parse("")
         assert result is None
 
     def test_parse_whitespace_only(self):
         """Parse whitespace-only string."""
-        result = dirty_json.parse('   ')
+        result = dirty_json.parse("   ")
         assert result is None
 
     def test_parse_numbers(self):
@@ -175,7 +183,7 @@ class TestDirtyJsonClass:
         parser = dirty_json.DirtyJson()
         assert parser.get_start_pos('  {"key": "value"}') == 2
         assert parser.get_start_pos('  ["item"]') == 2
-        assert parser.get_start_pos('text') == 0
+        assert parser.get_start_pos("text") == 0
 
     def test_feed_incremental_parsing(self):
         """Test incremental parsing with feed method.
@@ -193,6 +201,7 @@ class TestDirtyJsonClass:
 # files.py tests
 # =============================================================================
 
+
 class TestFilesPlaceholders:
     """Tests for placeholder replacement functions."""
 
@@ -203,11 +212,7 @@ class TestFilesPlaceholders:
 
     def test_replace_placeholders_text_multiple(self):
         """Replace multiple placeholders."""
-        result = files.replace_placeholders_text(
-            "{{greeting}} {{name}}!",
-            greeting="Hello",
-            name="World"
-        )
+        result = files.replace_placeholders_text("{{greeting}} {{name}}!", greeting="Hello", name="World")
         assert result == "Hello World!"
 
     def test_replace_placeholders_text_missing(self):
@@ -222,44 +227,28 @@ class TestFilesPlaceholders:
 
     def test_replace_placeholders_json_object(self):
         """Replace placeholders with JSON-encoded objects."""
-        result = files.replace_placeholders_json(
-            '{"data": {{data}}}',
-            data={"nested": "value"}
-        )
+        result = files.replace_placeholders_json('{"data": {{data}}}', data={"nested": "value"})
         assert '"nested"' in result
         assert '"value"' in result
 
     def test_replace_placeholders_dict_simple(self):
         """Replace placeholders in dict values."""
-        result = files.replace_placeholders_dict(
-            {"message": "Hello {{name}}!"},
-            name="World"
-        )
+        result = files.replace_placeholders_dict({"message": "Hello {{name}}!"}, name="World")
         assert result == {"message": "Hello World!"}
 
     def test_replace_placeholders_dict_full_replacement(self):
         """Replace entire value when placeholder is the full value."""
-        result = files.replace_placeholders_dict(
-            {"data": "{{items}}"},
-            items=[1, 2, 3]
-        )
+        result = files.replace_placeholders_dict({"data": "{{items}}"}, items=[1, 2, 3])
         assert result == {"data": [1, 2, 3]}
 
     def test_replace_placeholders_dict_nested(self):
         """Replace placeholders in nested structures."""
-        result = files.replace_placeholders_dict(
-            {"outer": {"inner": "{{value}}"}},
-            value="test"
-        )
+        result = files.replace_placeholders_dict({"outer": {"inner": "{{value}}"}}, value="test")
         assert result == {"outer": {"inner": "test"}}
 
     def test_replace_placeholders_dict_in_list(self):
         """Replace placeholders in lists within dict."""
-        result = files.replace_placeholders_dict(
-            {"items": ["{{a}}", "{{b}}"]},
-            a="first",
-            b="second"
-        )
+        result = files.replace_placeholders_dict({"items": ["{{a}}", "{{b}}"]}, a="first", b="second")
         assert result == {"items": ["first", "second"]}
 
 
@@ -289,7 +278,7 @@ class TestFilesCodeFences:
 
     def test_is_full_json_template_true(self):
         """Detect full JSON template."""
-        text = "```json\n{\"key\": \"value\"}\n```"
+        text = '```json\n{"key": "value"}\n```'
         assert files.is_full_json_template(text) is True
 
     def test_is_full_json_template_false_no_fence(self):
@@ -338,7 +327,7 @@ class TestFilesDirectoryOperations:
 
     def teardown_method(self):
         """Clean up temporary directory."""
-        if hasattr(self, 'temp_dir') and os.path.exists(self.temp_dir):
+        if hasattr(self, "temp_dir") and os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
         files.get_base_dir = self.original_base_dir
 
@@ -462,6 +451,7 @@ class TestFilesFindInDirs:
 # =============================================================================
 # strings.py tests
 # =============================================================================
+
 
 class TestStringsSanitize:
     """Tests for string sanitization."""
@@ -614,6 +604,7 @@ class TestStringsCalculateValidMatchLengths:
 # tokens.py tests
 # =============================================================================
 
+
 class TestTokensCounting:
     """Tests for token counting functions."""
 
@@ -687,6 +678,7 @@ class TestTokensConstants:
 # =============================================================================
 # Integration tests
 # =============================================================================
+
 
 class TestHelperIntegration:
     """Integration tests combining multiple helper modules."""

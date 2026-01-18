@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/print_style.py
+# hypothesis_version: 6.150.2
+
+['\x1b[0m', '\x1b[1m', '\x1b[3m', '\x1b[4m', '#', '#0000FF', '#008000', '#6C3483', '#808080', '#FFA500', '</pre></body></html>', '<br>', '<br>\n', 'Debug: ', 'Error: ', 'Hint: ', 'Info: ', 'LOG_PATH', 'Success: ', 'Warning: ', 'a', 'default', 'font-style: italic;', 'font-weight: bold;', 'logs', 'red', 'secrets_mgr', 'utf-8', 'w']

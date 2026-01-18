@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/dotenv.py
+# hypothesis_version: 6.150.2
+
+['.env', 'AUTH_LOGIN', 'AUTH_PASSWORD', 'RFC_PASSWORD', 'ROOT_PASSWORD', 'r+', 'w']

@@ -34,8 +34,54 @@ playwright install chromium
 
 ### Testing
 ```bash
+# Run all tests
 uv run pytest tests/
+
+# Run only property-based tests (52 tests)
+uv run pytest tests/test_agent_properties.py tests/test_models_properties.py -v
+
+# Run with Hypothesis statistics
+uv run pytest tests/test_agent_properties.py --hypothesis-show-statistics
+
+# Run with coverage
+uv run pytest tests/ --cov=python --cov-report=term-missing
+
+# Run in parallel (uses all CPU cores)
+uv run pytest tests/ -n auto
 ```
+
+### Testing Strategy (Property-Based Testing)
+
+This project uses **Hypothesis** for property-based testing in addition to traditional unit tests.
+
+**Key Files:**
+| File | Purpose |
+|------|---------|
+| `tests/strategies.py` | Centralized Hypothesis strategies (SINGLE SOURCE) |
+| `tests/test_agent_properties.py` | Agent property-based tests (27 tests) |
+| `tests/test_models_properties.py` | Models property-based tests (25 tests) |
+| `docs/testing-strategy.md` | Complete testing strategy documentation |
+
+**Strategy Pattern:**
+```python
+from tests.strategies import agent_configs, user_messages, model_configs
+
+@given(agent_configs)
+@settings(max_examples=50)
+def test_agent_config_invariants(config):
+    """Test that AgentConfig always has valid state"""
+    assert config.chat_model is not None
+    assert config.utility_model is not None
+    assert 1 <= config.code_exec_ssh_port <= 65535
+```
+
+**Invariant Examples:**
+- All 4 models (chat, utility, embeddings, browser) are present
+- SSH port is in valid range (1-65535)
+- message is never empty
+- ctx_length >= 0 for all ModelConfig
+
+See `docs/testing-strategy.md` for full documentation.
 
 ### Code Quality Checks
 ```bash

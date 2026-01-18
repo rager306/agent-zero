@@ -40,6 +40,14 @@ from agent import (
 from models import ModelConfig, ModelType
 import python.helpers.log as Log
 
+# Import strategies for reuse in parameterized tests
+from tests.strategies import (
+    agent_configs,
+    user_messages,
+    model_configs,
+    agent_context_types,
+)
+
 
 # --- Fixtures ---
 
@@ -100,8 +108,8 @@ def mock_log():
 @pytest.fixture
 def agent_context(mock_agent_config, clean_agent_context, mock_log):
     """Create an AgentContext instance for testing."""
-    with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
-        with patch('python.helpers.log.Log', return_value=mock_log):
+    with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
+        with patch("python.helpers.log.Log", return_value=mock_log):
             ctx = AgentContext(
                 config=mock_agent_config,
                 id="test-context-id",
@@ -141,7 +149,7 @@ class TestAgentContextInitialization:
 
     def test_basic_initialization(self, mock_agent_config, clean_agent_context):
         """Test basic AgentContext initialization."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config)
 
             assert ctx.config == mock_agent_config
@@ -156,38 +164,35 @@ class TestAgentContextInitialization:
 
     def test_initialization_with_custom_id(self, mock_agent_config, clean_agent_context):
         """Test AgentContext initialization with custom ID."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, id="custom-id")
 
             assert ctx.id == "custom-id"
 
     def test_initialization_with_name(self, mock_agent_config, clean_agent_context):
         """Test AgentContext initialization with name."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, name="My Context")
 
             assert ctx.name == "My Context"
 
     def test_initialization_with_type(self, mock_agent_config, clean_agent_context):
         """Test AgentContext initialization with different types."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
-            ctx = AgentContext(
-                config=mock_agent_config,
-                type=AgentContextType.BACKGROUND
-            )
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
+            ctx = AgentContext(config=mock_agent_config, type=AgentContextType.BACKGROUND)
 
             assert ctx.type == AgentContextType.BACKGROUND
 
     def test_initialization_with_paused(self, mock_agent_config, clean_agent_context):
         """Test AgentContext initialization with paused state."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, paused=True)
 
             assert ctx.paused is True
 
     def test_initialization_with_data(self, mock_agent_config, clean_agent_context):
         """Test AgentContext initialization with initial data."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             initial_data = {"key1": "value1", "key2": 42}
             ctx = AgentContext(config=mock_agent_config, data=initial_data)
 
@@ -195,7 +200,7 @@ class TestAgentContextInitialization:
 
     def test_initialization_registers_context(self, mock_agent_config, clean_agent_context):
         """Test that initialization registers context in _contexts."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, id="registered-id")
 
             assert "registered-id" in AgentContext._contexts
@@ -203,7 +208,7 @@ class TestAgentContextInitialization:
 
     def test_initialization_replaces_existing_context(self, mock_agent_config, clean_agent_context):
         """Test that initialization replaces existing context with same ID."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx1 = AgentContext(config=mock_agent_config, id="same-id")
             ctx2 = AgentContext(config=mock_agent_config, id="same-id")
 
@@ -212,7 +217,7 @@ class TestAgentContextInitialization:
 
     def test_initialization_increments_counter(self, mock_agent_config, clean_agent_context):
         """Test that initialization increments counter."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx1 = AgentContext(config=mock_agent_config)
             no1 = ctx1.no
 
@@ -227,7 +232,7 @@ class TestAgentContextStaticMethods:
 
     def test_get_existing_context(self, mock_agent_config, clean_agent_context):
         """Test getting an existing context by ID."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, id="get-test-id")
 
             retrieved = AgentContext.get("get-test-id")
@@ -242,7 +247,7 @@ class TestAgentContextStaticMethods:
 
     def test_first_returns_first_context(self, mock_agent_config, clean_agent_context):
         """Test first() returns the first context."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx1 = AgentContext(config=mock_agent_config, id="first-id")
             ctx2 = AgentContext(config=mock_agent_config, id="second-id")
 
@@ -258,7 +263,7 @@ class TestAgentContextStaticMethods:
 
     def test_all_returns_all_contexts(self, mock_agent_config, clean_agent_context):
         """Test all() returns all contexts."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx1 = AgentContext(config=mock_agent_config, id="all-test-1")
             ctx2 = AgentContext(config=mock_agent_config, id="all-test-2")
 
@@ -289,7 +294,7 @@ class TestAgentContextStaticMethods:
 
     def test_remove_existing_context(self, mock_agent_config, clean_agent_context):
         """Test removing an existing context."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config, id="remove-test-id")
 
             removed = AgentContext.remove("remove-test-id")
@@ -624,7 +629,7 @@ class TestAgentInitialization:
 
     def test_basic_initialization(self, mock_agent_config, clean_agent_context):
         """Test basic Agent initialization."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             assert agent.number == 0
@@ -636,7 +641,7 @@ class TestAgentInitialization:
 
     def test_initialization_with_number(self, mock_agent_config, clean_agent_context):
         """Test Agent initialization with different numbers."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent1 = Agent(number=1, config=mock_agent_config)
             agent5 = Agent(number=5, config=mock_agent_config)
 
@@ -645,7 +650,7 @@ class TestAgentInitialization:
 
     def test_initialization_with_existing_context(self, mock_agent_config, clean_agent_context):
         """Test Agent initialization with existing context."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             # Create context first
             ctx = AgentContext(config=mock_agent_config, id="pre-existing-ctx")
 
@@ -660,7 +665,7 @@ class TestAgentDataMethods:
 
     def test_get_data_existing(self, mock_agent_config, clean_agent_context):
         """Test getting existing data from Agent."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
             agent.data["test_key"] = "test_value"
 
@@ -670,7 +675,7 @@ class TestAgentDataMethods:
 
     def test_get_data_nonexistent(self, mock_agent_config, clean_agent_context):
         """Test getting nonexistent data returns None."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             result = agent.get_data("nonexistent")
@@ -679,7 +684,7 @@ class TestAgentDataMethods:
 
     def test_set_data(self, mock_agent_config, clean_agent_context):
         """Test setting data on Agent."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             agent.set_data("new_key", {"nested": "value"})
@@ -688,7 +693,7 @@ class TestAgentDataMethods:
 
     def test_set_data_overwrites(self, mock_agent_config, clean_agent_context):
         """Test setting data overwrites existing value."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             agent.set_data("key", "value1")
@@ -712,7 +717,7 @@ class TestAgentHandleCriticalException:
 
     def test_handle_handled_exception_reraises(self, mock_agent_config, clean_agent_context):
         """Test that HandledException is re-raised."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             original_exc = HandledException("Already handled")
@@ -724,7 +729,7 @@ class TestAgentHandleCriticalException:
         """Test that CancelledError is wrapped in HandledException."""
         import asyncio
 
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             cancelled_exc = asyncio.CancelledError()
@@ -734,7 +739,7 @@ class TestAgentHandleCriticalException:
 
     def test_handle_generic_exception_wraps_in_handled(self, mock_agent_config, clean_agent_context):
         """Test that generic exceptions are wrapped in HandledException."""
-        with patch.object(Agent, 'call_extensions', new_callable=AsyncMock):
+        with patch.object(Agent, "call_extensions", new_callable=AsyncMock):
             agent = Agent(number=0, config=mock_agent_config)
 
             generic_exc = ValueError("Some error")
@@ -751,7 +756,7 @@ class TestAgentContextOutput:
 
     def test_output_contains_required_fields(self, mock_agent_config, clean_agent_context):
         """Test that output contains all required fields."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(
                 config=mock_agent_config,
                 id="output-test-id",
@@ -773,7 +778,7 @@ class TestAgentContextOutput:
 
     def test_output_values(self, mock_agent_config, clean_agent_context):
         """Test that output values are correct."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(
                 config=mock_agent_config,
                 id="output-test-id",
@@ -791,7 +796,7 @@ class TestAgentContextOutput:
 
     def test_output_includes_output_data(self, mock_agent_config, clean_agent_context):
         """Test that output includes output_data fields."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(
                 config=mock_agent_config,
                 output_data={"custom_field": "custom_value"},
@@ -807,7 +812,7 @@ class TestAgentContextReset:
 
     def test_reset_clears_state(self, mock_agent_config, clean_agent_context):
         """Test that reset clears the context state."""
-        with patch.object(Agent, '__init__', lambda self, *args, **kwargs: None):
+        with patch.object(Agent, "__init__", lambda self, *args, **kwargs: None):
             ctx = AgentContext(config=mock_agent_config)
             ctx.paused = True
             ctx.streaming_agent = MagicMock()

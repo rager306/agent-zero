@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/browser_use_monkeypatch.py
+# hypothesis_version: 6.150.2
+
+[1.0, '$defs', '$ref', '/', 'OBJECT', 'Task Completed', '_placeholder', 'action', 'additionalProperties', 'complete_task', 'data', 'default', 'done', 'down', 'go_to_url', 'new_tab', 'num_pages', 'page_summary', 'properties', 'required', 'response', 'scroll', 'scroll_down', 'scroll_up', 'string', 'success', 'title', 'type']

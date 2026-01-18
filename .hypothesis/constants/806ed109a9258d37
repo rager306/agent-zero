@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/extract_tools.py
+# hypothesis_version: 6.150.2
+
+['(?<=: ")(.*?)(?=")', '.py', 'T', '\\n', '{', '}']

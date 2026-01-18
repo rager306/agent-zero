@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/extension.py
+# hypothesis_version: 6.150.2
+
+['*', '.', '/extensions/', 'Agent', 'Agent|None', 'agents/', 'python/extensions/']

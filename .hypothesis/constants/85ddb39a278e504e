@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/whisper.py
+# hypothesis_version: 6.150.2
+
+[0.1, '.wav', '/tmp/models/whisper', 'ignore', 'whisper-preload']

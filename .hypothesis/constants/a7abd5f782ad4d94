@@ -1,0 +1,4 @@
+# file: /root/agent-zero-dev/python/helpers/rfc.py
+# hypothesis_version: 6.150.2
+
+[200, 'Invalid RFC hash', 'args', 'function_name', 'hash', 'kwargs', 'module', 'rfc_input']
