@@ -50,6 +50,9 @@ instruments/**
 # for browser-use
 agent_history.gif
 
+# Node.js
+node_modules/
+
 
 # Coverage reports
 .coverage
