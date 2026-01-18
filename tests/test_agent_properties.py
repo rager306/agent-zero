@@ -163,7 +163,9 @@ class TestAgentContextProperties:
                 )
 
                 original_contexts = AgentContext._contexts.copy()
+                original_counter = AgentContext._counter
                 AgentContext._contexts.clear()
+                AgentContext._counter = 0
 
                 try:
                     ids = []
@@ -175,6 +177,7 @@ class TestAgentContextProperties:
                 finally:
                     AgentContext._contexts.clear()
                     AgentContext._contexts.update(original_contexts)
+                    AgentContext._counter = original_counter
 
     @given(model_configs, agent_context_types)
     @settings(max_examples=30, deadline=5000)
@@ -191,7 +194,9 @@ class TestAgentContextProperties:
                 )
 
                 original_contexts = AgentContext._contexts.copy()
+                original_counter = AgentContext._counter
                 AgentContext._contexts.clear()
+                AgentContext._counter = 0
 
                 try:
                     ctx_id = f"test-{id(model_config)}"
@@ -202,6 +207,7 @@ class TestAgentContextProperties:
                 finally:
                     AgentContext._contexts.clear()
                     AgentContext._contexts.update(original_contexts)
+                    AgentContext._counter = original_counter
 
     @given(model_configs)
     @settings(max_examples=20, deadline=5000)
@@ -253,7 +259,9 @@ class TestAgentContextProperties:
                 )
 
                 original_contexts = AgentContext._contexts.copy()
+                original_counter = AgentContext._counter
                 AgentContext._contexts.clear()
+                AgentContext._counter = 0
 
                 try:
                     ctx1 = AgentContext(config=config, paused=True)
@@ -270,6 +278,7 @@ class TestAgentContextProperties:
                 finally:
                     AgentContext._contexts.clear()
                     AgentContext._contexts.update(original_contexts)
+                    AgentContext._counter = original_counter
 
 
 # =============================================================================
@@ -384,7 +393,9 @@ class TestAgentContextIntegration:
                 )
 
                 original_contexts = AgentContext._contexts.copy()
+                original_counter = AgentContext._counter
                 AgentContext._contexts.clear()
+                AgentContext._counter = 0
 
                 try:
                     ctx = AgentContext(
@@ -405,6 +416,7 @@ class TestAgentContextIntegration:
                 finally:
                     AgentContext._contexts.clear()
                     AgentContext._contexts.update(original_contexts)
+                    AgentContext._counter = original_counter
 
 
 if __name__ == "__main__":
