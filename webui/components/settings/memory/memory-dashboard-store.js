@@ -64,6 +64,8 @@ const memoryDashboardStore = {
     await this.getCurrentMemorySubdir();
     await this.loadMemorySubdirs();
     await this.searchMemories();
+    // Enable polling before starting
+    this.pollingEnabled = true;
     // Start polling for live updates as soon as dashboard is open
     this.startPolling();
   },
@@ -658,6 +660,8 @@ ${memory.content_full}
   // Call this when the dialog/component is closed or destroyed
   cleanup() {
     this.stopPolling();
+    // Reset polling flag so it can restart cleanly on next open
+    this.pollingEnabled = false;
     // Clear data without triggering a new search (component is being destroyed)
     this.areaFilter = "";
     this.searchQuery = "";

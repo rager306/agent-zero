@@ -1,4 +1,5 @@
 import base64
+import httpx
 from python.helpers.print_style import PrintStyle
 from python.helpers.tool import Tool, Response
 from python.helpers import runtime, files, images
@@ -10,6 +11,30 @@ MAX_PIXELS = 768_000
 QUALITY = 75
 TOKENS_ESTIMATE = 1500
 
+# HTTP client timeout for downloading images
+HTTP_TIMEOUT = 30.0
+
+
+def is_url(path: str) -> bool:
+    """Check if path is a URL."""
+    return path.startswith("http://") or path.startswith("https://")
+
+
+async def download_image(url: str) -> bytes | None:
+    """Download image from URL and return bytes."""
+    try:
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT, follow_redirects=True) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            content_type = response.headers.get("content-type", "")
+            if "image" in content_type or any(
+                url.lower().endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]
+            ):
+                return response.content
+            return None
+    except Exception:
+        return None
+
 
 class VisionLoad(Tool):
     async def execute(self, paths: list[str] = [], **kwargs) -> Response:
@@ -18,6 +43,30 @@ class VisionLoad(Tool):
         template: list[dict[str, str]] = []  # type: ignore
 
         for path in paths:
+            # Handle URLs
+            if is_url(path):
+                if path not in self.images_dict:
+                    try:
+                        file_content = await download_image(path)
+                        if file_content:
+                            # Compress and convert to JPEG
+                            compressed = images.compress_image(
+                                file_content, max_pixels=MAX_PIXELS, quality=QUALITY
+                            )
+                            # Encode as base64
+                            file_content_b64 = base64.b64encode(compressed).decode("utf-8")
+                            self.images_dict[path] = file_content_b64
+                        else:
+                            self.images_dict[path] = None
+                            PrintStyle().error(f"Failed to download image from {path}")
+                            self.agent.context.log.log("warning", f"Failed to download image from {path}")
+                    except Exception as e:
+                        self.images_dict[path] = None
+                        PrintStyle().error(f"Error processing image from URL {path}: {e}")
+                        self.agent.context.log.log("warning", f"Error processing image from URL {path}: {e}")
+                continue
+
+            # Handle local files
             if not await runtime.call_development_function(files.exists, str(path)):
                 continue
 

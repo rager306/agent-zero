@@ -1,9 +1,11 @@
 import base64
+import json
 import os
+
 from python.helpers.api import ApiHandler, Request, Response
 from python.helpers import files
+from python.helpers.file_browser import validate_path, ALLOWED_ROOTS
 from python.helpers.print_style import PrintStyle
-import json
 
 
 class ApiFilesGet(ApiHandler):
@@ -29,24 +31,16 @@ class ApiFilesGet(ApiHandler):
             paths = input.get("paths", [])
 
             if not paths:
-                return Response(
-                    '{"error": "paths array is required"}',
-                    status=400,
-                    mimetype="application/json"
-                )
+                return Response('{"error": "paths array is required"}', status=400, mimetype="application/json")
 
             if not isinstance(paths, list):
-                return Response(
-                    '{"error": "paths must be an array"}',
-                    status=400,
-                    mimetype="application/json"
-                )
+                return Response('{"error": "paths must be an array"}', status=400, mimetype="application/json")
 
             result = {}
 
             for path in paths:
                 try:
-                    # Convert internal paths to external paths
+                    # Only accept /a0/... paths - reject raw absolute paths outside /a0
                     if path.startswith("/a0/tmp/uploads/"):
                         # Internal path - convert to external
                         filename = path.replace("/a0/tmp/uploads/", "")
@@ -58,19 +52,30 @@ class ApiFilesGet(ApiHandler):
                         external_path = files.get_abs_path(relative_path)
                         filename = os.path.basename(external_path)
                     else:
-                        # Assume it's already an external/absolute path
-                        external_path = path
-                        filename = os.path.basename(path)
+                        # Reject raw absolute paths outside /a0
+                        PrintStyle.warning(f"Rejected path outside /a0: {path}")
+                        continue
+
+                    # Validate the resolved path is within allowed directories
+                    is_valid, validated_path = validate_path(external_path, ALLOWED_ROOTS)
+                    if not is_valid:
+                        PrintStyle.warning(f"Path validation failed for {path}: {validated_path}")
+                        continue
 
                     # Check if file exists
-                    if not os.path.exists(external_path):
+                    if not os.path.exists(validated_path):
                         PrintStyle.warning(f"File not found: {path}")
                         continue
 
+                    # Ensure it's a file, not a directory
+                    if not os.path.isfile(validated_path):
+                        PrintStyle.warning(f"Path is not a file: {path}")
+                        continue
+
                     # Read and encode file
-                    with open(external_path, "rb") as f:
+                    with open(validated_path, "rb") as f:
                         file_content = f.read()
-                        base64_content = base64.b64encode(file_content).decode('utf-8')
+                        base64_content = base64.b64encode(file_content).decode("utf-8")
                         result[filename] = base64_content
 
                     PrintStyle().print(f"Retrieved file: {filename} ({len(file_content)} bytes)")
@@ -80,16 +85,14 @@ class ApiFilesGet(ApiHandler):
                     continue
 
             # Log the retrieval
-            PrintStyle(
-                background_color="#2ECC71", font_color="white", bold=True, padding=True
-            ).print(f"API Files retrieved: {len(result)} files")
+            PrintStyle(background_color="#2ECC71", font_color="white", bold=True, padding=True).print(
+                f"API Files retrieved: {len(result)} files"
+            )
 
             return result
 
         except Exception as e:
             PrintStyle.error(f"API files get error: {str(e)}")
             return Response(
-                json.dumps({"error": f"Internal server error: {str(e)}"}),
-                status=500,
-                mimetype="application/json"
+                json.dumps({"error": f"Internal server error: {str(e)}"}), status=500, mimetype="application/json"
             )

@@ -6,6 +6,7 @@ import os
 from flask import Response
 from python.helpers.api import ApiHandler, Input, Output, Request
 from python.helpers import files, runtime
+from python.helpers.file_browser import validate_path, ALLOWED_ROOTS
 from python.api import file_info
 
 
@@ -37,7 +38,7 @@ def stream_file_download(file_source, download_name, chunk_size=8192):
     def generate():
         if isinstance(file_source, str):
             # File path - open and stream from disk
-            with open(file_source, 'rb') as f:
+            with open(file_source, "rb") as f:
                 while True:
                     chunk = f.read(chunk_size)
                     if not chunk:
@@ -55,7 +56,7 @@ def stream_file_download(file_source, download_name, chunk_size=8192):
     # Detect content type based on file extension
     content_type, _ = mimetypes.guess_type(download_name)
     if not content_type:
-        content_type = 'application/octet-stream'
+        content_type = "application/octet-stream"
 
     # Create streaming response with proper headers for immediate streaming
     response = Response(
@@ -63,19 +64,18 @@ def stream_file_download(file_source, download_name, chunk_size=8192):
         content_type=content_type,
         direct_passthrough=True,  # Prevent Flask from buffering the response
         headers={
-            'Content-Disposition': f'attachment; filename="{download_name}"',
-            'Content-Length': str(file_size),  # Critical for browser progress bars
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',  # Disable nginx buffering
-            'Accept-Ranges': 'bytes'  # Allow browser to resume downloads
-        }
+            "Content-Disposition": f'attachment; filename="{download_name}"',
+            "Content-Length": str(file_size),  # Critical for browser progress bars
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Accept-Ranges": "bytes",  # Allow browser to resume downloads
+        },
     )
 
     return response
 
 
 class DownloadFile(ApiHandler):
-
     @classmethod
     def get_methods(cls):
         return ["GET"]
@@ -83,13 +83,16 @@ class DownloadFile(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:
-            raise ValueError("No file path provided")
+            return Response('{"error": "No file path provided"}', status=400, mimetype="application/json")
         if not file_path.startswith("/"):
             file_path = f"/{file_path}"
 
-        file = await runtime.call_development_function(
-            file_info.get_file_info, file_path
-        )
+        # Validate path is within allowed directories
+        is_valid, result = validate_path(file_path, ALLOWED_ROOTS)
+        if not is_valid:
+            return Response('{"error": "Invalid path: access denied"}', status=403, mimetype="application/json")
+
+        file = await runtime.call_development_function(file_info.get_file_info, file_path)
 
         if not file or not file["exists"]:
             raise Exception(f"File {file_path} not found")
@@ -99,28 +102,16 @@ class DownloadFile(ApiHandler):
             if runtime.is_development():
                 b64 = await runtime.call_development_function(fetch_file, zip_file)
                 file_data = BytesIO(base64.b64decode(b64))
-                return stream_file_download(
-                    file_data,
-                    download_name=os.path.basename(zip_file)
-                )
+                return stream_file_download(file_data, download_name=os.path.basename(zip_file))
             else:
-                return stream_file_download(
-                    zip_file,
-                    download_name=f"{os.path.basename(file_path)}.zip"
-                )
+                return stream_file_download(zip_file, download_name=f"{os.path.basename(file_path)}.zip")
         elif file["is_file"]:
             if runtime.is_development():
                 b64 = await runtime.call_development_function(fetch_file, file["abs_path"])
                 file_data = BytesIO(base64.b64decode(b64))
-                return stream_file_download(
-                    file_data,
-                    download_name=os.path.basename(file_path)
-                )
+                return stream_file_download(file_data, download_name=os.path.basename(file_path))
             else:
-                return stream_file_download(
-                    file["abs_path"],
-                    download_name=os.path.basename(file["file_name"])
-                )
+                return stream_file_download(file["abs_path"], download_name=os.path.basename(file["file_name"]))
         raise Exception(f"File {file_path} not found")
 
 

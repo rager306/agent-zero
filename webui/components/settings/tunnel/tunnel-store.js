@@ -322,6 +322,17 @@ const model = {
       this.isLoading = true;
       this.loadingText = "Stopping tunnel...";
 
+      // Change stop button appearance
+      const stopButton = document.querySelector("#tunnel-settings-section .stop-button");
+      const originalStopContent = stopButton ? stopButton.innerHTML : "";
+
+      if (stopButton) {
+        stopButton.innerHTML =
+          '<span class="icon material-symbols-outlined spin">progress_activity</span> Stopping...';
+        stopButton.disabled = true;
+        stopButton.classList.add("stopping");
+      }
+
       try {
         // Call the backend to stop the tunnel
         const response = await fetchApi("/tunnel_proxy", {
@@ -355,23 +366,20 @@ const model = {
           );
         } else {
           window.toastFrontendError("Failed to stop tunnel", "Tunnel Error");
-
-          // Reset stop button
-          stopButton.innerHTML = originalStopContent;
-          stopButton.disabled = false;
-          stopButton.classList.remove("stopping");
         }
       } catch (error) {
         window.toastFrontendError("Error stopping tunnel", "Tunnel Error");
         console.error("Error stopping tunnel:", error);
-
-        // Reset stop button
-        stopButton.innerHTML = originalStopContent;
-        stopButton.disabled = false;
-        stopButton.classList.remove("stopping");
       } finally {
         this.isLoading = false;
         this.loadingText = "";
+
+        // Reset stop button if it exists
+        if (stopButton) {
+          stopButton.innerHTML = originalStopContent;
+          stopButton.disabled = false;
+          stopButton.classList.remove("stopping");
+        }
       }
     }
   },

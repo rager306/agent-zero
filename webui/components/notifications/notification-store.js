@@ -593,7 +593,7 @@ const model = {
     this.toastStack.push(toast);
 
     // Enforce max stack limit (remove oldest from top)
-    if (this.toastStack.length > this.maxToastStack) {
+    if (this.toastStack.length > maxToasts) {
       const removed = this.toastStack.shift(); // Remove from top
       if (removed.autoRemoveTimer) {
         clearTimeout(removed.autoRemoveTimer);

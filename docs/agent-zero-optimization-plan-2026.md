@@ -14,7 +14,8 @@
 5. [SearXNG Оптимизация](#4-searxng-оптимизация)
 6. [Контейнер Оптимизация](#5-контейнер-оптимизация)
 7. [Архитектура и Async/Await](#6-архитектура-и-asyncawait)
-8. [Чек-лист для внедрения](#чек-лист-для-внедрения)
+8. [Альтернативы Redis для кэширования](#7-альтернативы-redis-для-кэширования)
+9. [Чек-лист для внедрения](#чек-лист-для-внедрения)
 
 ---
 
@@ -25,10 +26,12 @@
 | **LLM Кэширование** | 🔴 Высокий | Низкая | Снижение затрат 50-90% |
 | **UV Package Manager** | 🔴 Высокий | Низкая | Ускорение установки 10-100x |
 | **httpx + Connection Pooling** | 🔴 Высокий | Низкая | Снижение latency, HTTP/2 |
+| **Многоуровневый кэш (cachetools+DiskCache)** | 🔴 Высокий | Низкая | Снижение API вызовов 60-80% |
 | **Python 3.13 + JIT** | 🟡 Средний | Средняя | Ускорение 5-30% |
 | **SearXNG оптимизация** | 🟡 Средний | Низкая | Ускорение поиска 2-3x |
 | **Bun вместо NodeJS** | 🟡 Средний | Средняя | Ускорение холодного старта 5-8x |
 | **FastAPI миграция** | 🟡 Средний | Средняя | 3-4x throughput, нативный async |
+| **Pogocache вместо Redis** | 🟡 Средний | Низкая | 2x быстрее Redis, бесплатно |
 | **Контейнер оптимизация** | 🟢 Низкий | Высокая | Уменьшение образа 50% |
 | **Python 3.13 Free-Threading** | 🟢 Низкий | Высокая | Параллельность 2-4x (эксперим.) |
 
@@ -1686,19 +1689,438 @@ class DeferredTask:
 
 ---
 
+## 7. Альтернативы Redis для кэширования
+
+### 7.1 Обзор
+
+При выборе решения для кэширования важно учитывать не только производительность, но и стоимость владения. Redis требует отдельного сервера и потребляет RAM. Существуют бесплатные и легковесные альтернативы, которые могут быть более подходящими для различных сценариев.
+
+### 7.2 Pogocache — высокопроизводительная замена Redis
+
+[Pogocache](https://pogocache.com/) — новый open-source cache server (GA 2025), написанный на C с фокусом на низкую latency и CPU эффективность.
+
+#### Ключевые преимущества
+
+| Характеристика | Pogocache | Redis | Memcached |
+|----------------|-----------|-------|-----------|
+| **QPS (8 threads)** | 3.08M | 1.51M | 2.60M |
+| **Лицензия** | MIT (бесплатно) | Dual (SSPL/RSAL) | BSD |
+| **Протоколы** | Redis, Memcache, HTTP, Postgres | RESP | Memcache |
+| **Режимы работы** | Hosted, Local, Embedded | Server only | Server only |
+
+#### Установка
+
+```bash
+# Linux AMD64
+curl -L https://pogocache.com/download/linux-amd64 -o pogocache
+chmod +x pogocache
+./pogocache --port 6379
+
+# Docker
+docker run -p 6379:6379 pogocache/pogocache
+```
+
+#### Drop-in замена Redis
+
+Pogocache поддерживает Redis wire protocol (RESP), поэтому существующий код с Redis клиентами будет работать без изменений:
+
+```python
+import redis
+
+# Работает как с Redis, так и с Pogocache
+client = redis.Redis(host='localhost', port=6379)
+client.set('key', 'value', ex=300)
+value = client.get('key')
+```
+
+#### Конфигурация для Agent Zero
+
+```yaml
+# В docker-compose.yml
+services:
+  pogocache:
+    image: pogocache/pogocache:latest
+    command: pogocache-server --save 30 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache-data:/data
+
+  agent-zero:
+    environment:
+      - REDIS_URL=redis://pogocache:6379/0
+```
+
+### 7.3 DiskCache — персистентный кэш на SQLite
+
+[DiskCache](https://grantjenks.com/docs/diskcache/) — чистый Python кэш использующий SQLite. Идеален когда не хочется поднимать отдельный сервис.
+
+#### Преимущества
+
+- **Нулевые зависимости** — не нужен Redis/Memcached сервер
+- **Персистентность** — данные сохраняются между перезапусками
+- **Использует SSD** — не потребляет RAM для хранения
+- **Django-совместимость** — может заменить Django cache backend
+
+#### Установка
+
+```bash
+uv add diskcache
+# или
+pip install diskcache
+```
+
+#### Базовое использование
+
+```python
+from diskcache import Cache
+
+# Создать кэш в директории
+cache = Cache('/a0/tmp/search_cache')
+
+# SET с TTL
+cache.set('search:python', results, expire=300)
+
+# GET
+results = cache.get('search:python')
+
+# Декоратор для мемоизации
+@cache.memoize(expire=600)
+def expensive_search(query: str):
+    return searxng_search(query)
+```
+
+#### Продвинутое использование — FanoutCache
+
+Для высоконагруженных сценариев с параллельным доступом:
+
+```python
+from diskcache import FanoutCache
+
+# Создаёт 8 шардов для параллельного доступа
+cache = FanoutCache('/a0/tmp/cache', shards=8)
+```
+
+#### Бенчмарки DiskCache
+
+| Операция | DiskCache | Memcached | Redis |
+|----------|-----------|-----------|-------|
+| SET (1KB) | 25,000/s | 100,000/s | 80,000/s |
+| GET (1KB) | 50,000/s | 120,000/s | 100,000/s |
+| Требует сервер | Нет | Да | Да |
+| RAM usage | ~10MB | Configurable | Configurable |
+
+### 7.4 cachetools — in-memory кэширование
+
+[cachetools](https://cachetools.readthedocs.io/) — расширяемые коллекции для кэширования с различными стратегиями вытеснения.
+
+#### Доступные типы кэша
+
+| Класс | Стратегия | Применение |
+|-------|-----------|------------|
+| `LRUCache` | Least Recently Used | Общего назначения |
+| `TTLCache` | Time-To-Live + LRU | Данные с ограниченным сроком |
+| `LFUCache` | Least Frequently Used | Популярные данные |
+| `TLRUCache` | Time-aware LRU | Комбинированный подход |
+
+#### Установка
+
+```bash
+uv add cachetools
+```
+
+#### Использование с декоратором
+
+```python
+from cachetools import TTLCache, cached
+from cachetools.keys import hashkey
+
+# Кэш на 1000 элементов с TTL 5 минут
+cache = TTLCache(maxsize=1000, ttl=300)
+
+@cached(cache)
+def search_api(query: str) -> dict:
+    """Результаты кэшируются автоматически"""
+    return external_api.search(query)
+
+# Для методов класса
+@cached(cache, key=lambda self, query: hashkey(query))
+def search(self, query: str):
+    return self._do_search(query)
+```
+
+#### Thread-safe использование
+
+```python
+from cachetools import TTLCache, cached
+import threading
+
+cache = TTLCache(maxsize=1000, ttl=300)
+lock = threading.Lock()
+
+@cached(cache, lock=lock)
+def thread_safe_search(query: str):
+    return search_engine.search(query)
+```
+
+### 7.5 functools.lru_cache — встроенное решение
+
+Python имеет встроенный механизм мемоизации без внешних зависимостей.
+
+#### lru_cache (Python 3.2+)
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# Статистика кэша
+print(fibonacci.cache_info())
+# CacheInfo(hits=96, misses=30, maxsize=128, currsize=30)
+
+# Очистка кэша
+fibonacci.cache_clear()
+```
+
+#### cache (Python 3.9+) — безлимитный LRU
+
+```python
+from functools import cache
+
+@cache
+def expensive_computation(x, y):
+    return complex_calculation(x, y)
+```
+
+#### Ограничения
+
+- **Нет TTL** — данные хранятся пока не вызван `cache_clear()`
+- **Нет персистентности** — кэш очищается при перезапуске
+- **Только hashable аргументы** — не работает с dict, list
+
+### 7.6 Многоуровневое кэширование для Agent Zero
+
+Рекомендуемая архитектура с несколькими уровнями кэширования:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Уровень 1: In-Memory                      │
+│           cachetools.TTLCache (sub-millisecond)              │
+│                    maxsize=1000, ttl=300                     │
+└─────────────────────────────────────────────────────────────┘
+                           │ miss
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Уровень 2: Disk                           │
+│              DiskCache/SQLite (~1-5ms)                       │
+│                  Персистентный, SSD                          │
+└─────────────────────────────────────────────────────────────┘
+                           │ miss
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Уровень 3: Distributed                    │
+│            Pogocache/Valkey (~1-10ms network)                │
+│           Для multi-instance deployments                     │
+└─────────────────────────────────────────────────────────────┘
+                           │ miss
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Origin: API/Database                      │
+│              SearXNG, LLM API, External APIs                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Реализация многоуровневого кэша
+
+```python
+# python/helpers/multilevel_cache.py
+import hashlib
+from cachetools import TTLCache
+from diskcache import Cache
+from typing import Any, Optional, Callable
+import threading
+
+class MultiLevelCache:
+    """Многоуровневый кэш: Memory -> Disk -> Optional Redis"""
+
+    def __init__(
+        self,
+        memory_maxsize: int = 1000,
+        memory_ttl: int = 300,
+        disk_path: str = "/a0/tmp/cache",
+        disk_ttl: int = 3600,
+    ):
+        self._memory = TTLCache(maxsize=memory_maxsize, ttl=memory_ttl)
+        self._disk = Cache(disk_path)
+        self._disk_ttl = disk_ttl
+        self._lock = threading.Lock()
+
+    def _make_key(self, key: str) -> str:
+        """Создаёт хэш ключа для консистентности"""
+        return hashlib.sha256(key.encode()).hexdigest()[:16]
+
+    def get(self, key: str) -> Optional[Any]:
+        """Получить значение, проверяя все уровни"""
+        cache_key = self._make_key(key)
+
+        # L1: Memory
+        with self._lock:
+            if cache_key in self._memory:
+                return self._memory[cache_key]
+
+        # L2: Disk
+        value = self._disk.get(cache_key)
+        if value is not None:
+            # Promote to L1
+            with self._lock:
+                self._memory[cache_key] = value
+            return value
+
+        return None
+
+    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """Сохранить значение на всех уровнях"""
+        cache_key = self._make_key(key)
+        disk_ttl = ttl or self._disk_ttl
+
+        # L1: Memory
+        with self._lock:
+            self._memory[cache_key] = value
+
+        # L2: Disk
+        self._disk.set(cache_key, value, expire=disk_ttl)
+
+    def delete(self, key: str) -> None:
+        """Удалить из всех уровней"""
+        cache_key = self._make_key(key)
+
+        with self._lock:
+            self._memory.pop(cache_key, None)
+
+        self._disk.delete(cache_key)
+
+    def cached(self, ttl: Optional[int] = None):
+        """Декоратор для автоматического кэширования"""
+        def decorator(func: Callable):
+            def wrapper(*args, **kwargs):
+                # Создаём ключ из имени функции и аргументов
+                key = f"{func.__name__}:{args}:{sorted(kwargs.items())}"
+
+                # Проверяем кэш
+                result = self.get(key)
+                if result is not None:
+                    return result
+
+                # Вызываем функцию
+                result = func(*args, **kwargs)
+
+                # Сохраняем результат
+                self.set(key, result, ttl)
+                return result
+            return wrapper
+        return decorator
+
+
+# Глобальный экземпляр для Agent Zero
+search_cache = MultiLevelCache(
+    memory_maxsize=500,
+    memory_ttl=300,      # 5 минут в памяти
+    disk_path="/a0/tmp/search_cache",
+    disk_ttl=3600,       # 1 час на диске
+)
+```
+
+#### Использование в search_engine.py
+
+```python
+from python.helpers.multilevel_cache import search_cache
+
+class SearchEngine:
+    @search_cache.cached(ttl=600)
+    async def search(self, query: str) -> list[dict]:
+        """Поиск с автоматическим кэшированием"""
+        return await self._searxng_search(query)
+```
+
+### 7.7 Сравнительная таблица решений
+
+| Решение | Стоимость | Сложность | Производительность | Персистентность | Distributed |
+|---------|-----------|-----------|-------------------|-----------------|-------------|
+| **functools.cache** | Бесплатно | Минимальная | Очень высокая | Нет | Нет |
+| **cachetools** | Бесплатно | Низкая | Очень высокая | Нет | Нет |
+| **DiskCache** | Бесплатно | Низкая | Высокая | Да | Нет |
+| **Pogocache** | Бесплатно | Средняя | Очень высокая | Да | Да |
+| **Valkey** | Бесплатно | Средняя | Высокая | Да | Да |
+| **Redis** | Платно* | Средняя | Высокая | Да | Да |
+
+*Redis имеет ограничительную лицензию SSPL с 2024 года
+
+### 7.8 Рекомендации для Agent Zero
+
+#### Сценарий 1: Single-instance deployment (рекомендуется)
+
+```
+cachetools (L1) + DiskCache (L2)
+```
+
+- Не требует дополнительных сервисов
+- Персистентность между перезапусками
+- Минимальное потребление RAM
+
+#### Сценарий 2: Multi-instance / Production
+
+```
+cachetools (L1) + Pogocache (L2)
+```
+
+- Общий кэш между инстансами
+- 2x быстрее Redis
+- MIT лицензия, бесплатно
+
+#### Сценарий 3: Уже используется Redis/Valkey
+
+```
+cachetools (L1) + Redis/Valkey (L2)
+```
+
+- Добавить in-memory слой для снижения нагрузки на Redis
+- Сохранить существующую инфраструктуру
+
+### 7.9 Источники по кэшированию
+
+- [Pogocache Official Site](https://pogocache.com/)
+- [Pogocache GitHub](https://github.com/tidwall/pogocache)
+- [Pogocache: High-Performance Redis Alternative - It's FOSS](https://itsfoss.com/news/pogocache/)
+- [DiskCache Documentation](https://grantjenks.com/docs/diskcache/)
+- [DiskCache: Your Secret Python Perf Weapon - Talk Python #534](https://talkpython.fm/episodes/show/534/diskcache-your-secret-python-perf-weapon)
+- [cachetools Documentation](https://cachetools.readthedocs.io/)
+- [cachetools PyPI](https://pypi.org/project/cachetools/)
+- [Caching in Python Using LRU Cache - Real Python](https://realpython.com/lru-cache-python/)
+- [Python Cache Tutorial - DataCamp](https://www.datacamp.com/tutorial/python-cache-introduction)
+- [Valkey Official Site](https://valkey.io/)
+
+---
+
 ## Чек-лист для внедрения
 
 ### Этап 1: Немедленно (1-2 дня)
 
 - [ ] Включить prompt caching в настройках Agent Zero
 - [ ] Добавить `cache_control` для MiniMax/OpenRouter вызовов
-- [ ] Установить UV и мигрировать requirements
+- [x] Установить UV и мигрировать requirements
 - [ ] Переключить a0-launcher на `bun install`
 - [ ] Заменить `time.sleep()` на `asyncio.sleep()` где применимо
+- [ ] Добавить `cachetools` и `diskcache` в зависимости
+- [ ] Создать `multilevel_cache.py` helper
 
 ### Этап 2: На этой неделе
 
-- [ ] Настроить Redis/Valkey кэширование для LiteLLM
+- [ ] Внедрить многоуровневый кэш для search_engine.py
+- [ ] Настроить DiskCache для SearXNG результатов
 - [ ] Оптимизировать SearXNG движки и настройки
 - [ ] Настроить uWSGI workers и threads
 - [ ] Добавить resource limits в docker-compose
@@ -1710,7 +2132,8 @@ class DeferredTask:
 - [ ] Обновить до Python 3.13, включить JIT
 - [ ] Тестировать Bun runtime для a0-launcher
 - [ ] Оптимизировать Dockerfile с multi-stage builds
-- [ ] Внедрить Redis semantic caching
+- [ ] Тестировать Pogocache как замену Redis/Valkey
+- [ ] Внедрить кэширование LLM ответов (DiskCache или Pogocache)
 - [ ] Прототип FastAPI + Uvicorn для run_ui.py
 - [ ] Рефакторинг DeferredTask с asyncio.Runner
 
@@ -1722,6 +2145,7 @@ class DeferredTask:
 - [ ] Оптимизировать образ с DockerSlim
 - [ ] Полная миграция на FastAPI/ASGI
 - [ ] ProcessPoolExecutor для CPU-bound операций
+- [ ] Миграция с Valkey на Pogocache (если тесты успешны)
 
 ---
 
@@ -1736,6 +2160,10 @@ class DeferredTask:
 4. **UV Package Manager** — безрисковая миграция с немедленным эффектом (10-100x ускорение)
 
 5. **Debian Slim > Alpine** для Python workloads — избегайте 15-35% деградации производительности
+
+6. **Pogocache — лучшая альтернатива Redis** — 2x быстрее, MIT лицензия, drop-in совместимость с Redis клиентами
+
+7. **Многоуровневое кэширование без Redis** — комбинация cachetools (L1) + DiskCache (L2) даёт 60-80% снижение API вызовов без дополнительных сервисов
 
 ---
 

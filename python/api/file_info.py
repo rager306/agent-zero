@@ -1,13 +1,27 @@
 import os
+
+from flask import Response
+
 from python.helpers.api import ApiHandler, Input, Output, Request
-from python.helpers import files, runtime
+from python.helpers import runtime
+from python.helpers.file_browser import validate_path, ALLOWED_ROOTS
 from typing import TypedDict
+
 
 class FileInfoApi(ApiHandler):
     async def process(self, input: Input, request: Request) -> Output:
         path = input.get("path", "")
+        if not path:
+            return Response('{"error": "No path provided"}', status=400, mimetype="application/json")
+
+        # Validate path is within allowed directories
+        is_valid, result = validate_path(path, ALLOWED_ROOTS)
+        if not is_valid:
+            return Response('{"error": "Invalid path: access denied"}', status=403, mimetype="application/json")
+
         info = await runtime.call_development_function(get_file_info, path)
         return info
+
 
 class FileInfo(TypedDict):
     input_path: str
@@ -25,8 +39,29 @@ class FileInfo(TypedDict):
     file_ext: str
     message: str
 
+
 async def get_file_info(path: str) -> FileInfo:
-    abs_path = files.get_abs_path(path)
+    # Validate path before processing
+    is_valid, validated_path = validate_path(path, ALLOWED_ROOTS)
+    if not is_valid:
+        return {
+            "input_path": path,
+            "abs_path": "",
+            "exists": False,
+            "is_dir": False,
+            "is_file": False,
+            "is_link": False,
+            "size": 0,
+            "modified": 0,
+            "created": 0,
+            "permissions": 0,
+            "dir_path": "",
+            "file_name": "",
+            "file_ext": "",
+            "message": "Access denied: path outside allowed directories",
+        }
+
+    abs_path = validated_path
     exists = os.path.exists(abs_path)
     message = ""
 
@@ -47,5 +82,5 @@ async def get_file_info(path: str) -> FileInfo:
         "dir_path": os.path.dirname(abs_path),
         "file_name": os.path.basename(abs_path),
         "file_ext": os.path.splitext(abs_path)[1],
-        "message": message
+        "message": message,
     }
