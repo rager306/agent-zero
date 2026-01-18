@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+> **⚠️ ORCHESTRATOR MODE REQUIRED**
+>
+> This project uses **Orchestrator Mode** for multi-step tasks:
+> - **1 command** → Execute directly
+> - **2+ commands** → **DELEGATE to subagent** (never execute multiple commands yourself)
+>
+> See global instructions in `/root/.claude/CLAUDE.md` for full Orchestrator Mode documentation.
+
 > **IMPORTANT: This project uses UV package manager, NOT pip!**
 > - Install packages: `uv pip install <package>`
 > - Sync dependencies: `uv sync`
@@ -200,3 +208,12 @@ uv sync --no-dev --active
 ```
 
 **Never use `pip install` directly!**
+
+---
+
+> **⚠️ REMEMBER: ORCHESTRATOR MODE**
+>
+> - 1 command → Execute directly
+> - 2+ commands → **DELEGATE to subagent**
+>
+> Full documentation: `/root/.claude/CLAUDE.md`
