@@ -218,8 +218,9 @@ class TestAgentContextProperties:
                 )
 
                 original_contexts = AgentContext._contexts.copy()
-                AgentContext._counter = 0
+                original_counter = AgentContext._counter
                 AgentContext._contexts.clear()
+                AgentContext._counter = 0
 
                 try:
                     ctx1 = AgentContext(config=config, id="ctx1")
@@ -235,6 +236,7 @@ class TestAgentContextProperties:
                 finally:
                     AgentContext._contexts.clear()
                     AgentContext._contexts.update(original_contexts)
+                    AgentContext._counter = original_counter
 
     @given(model_configs)
     @settings(max_examples=30, deadline=5000)

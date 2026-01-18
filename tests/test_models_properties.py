@@ -187,13 +187,23 @@ class TestChatGenerationResultProperties:
     @given(chat_chunks)
     @settings(max_examples=30)
     def test_response_accumulates(self, chunk: dict):
-        """Response should accumulate when add_chunk is called."""
+        """Response should accumulate when add_chunk is called.
+
+        Note: We check the processed chunk returned by add_chunk() because
+        thinking tags may redirect content from response_delta to reasoning_delta.
+        """
         result = ChatGenerationResult()
 
-        result.add_chunk(chunk)
-        result.add_chunk(chunk)
+        processed1 = result.add_chunk(chunk)
+        processed2 = result.add_chunk(chunk)
 
-        assert len(result.response) >= len(chunk.get("response_delta", ""))
+        # Check that processed chunks have valid response_delta (may be empty due to thinking tags)
+        assert isinstance(processed1.get("response_delta", ""), str)
+        assert isinstance(processed2.get("response_delta", ""), str)
+
+        # Response accumulates from processed chunks, not raw input
+        total_processed = len(processed1.get("response_delta", "")) + len(processed2.get("response_delta", ""))
+        assert len(result.response) == total_processed
 
     @given(chat_chunks)
     @settings(max_examples=30)
